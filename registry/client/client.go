@@ -8,10 +8,10 @@ import (
 	//	"net/url" 需要使用url解析字符串,判定url是否合法
 	"bytes"
 	"encoding/json"
-	"errors"
+	//	"errors"
 	"io/ioutil"
 	"strconv"
-	"strings"
+	//"strings"
 	"time"
 )
 
@@ -116,7 +116,7 @@ func doGet(opts ClientOpts, respObject interface{}) (err error) {
 	//return nil
 }
 
-func doGetHeader(opts ClientOpts) (header http.Header, err error) {
+func doGet2(opts ClientOpts) (resp *http.Response, err error) {
 	if opts.Timeout == 0 {
 		opts.Timeout = DefaultTimeOut
 	}
@@ -124,26 +124,13 @@ func doGetHeader(opts ClientOpts) (header http.Header, err error) {
 
 	req, err := http.NewRequest("GET", opts.Url, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	req.SetBasicAuth(opts.AccessKey, opts.SecretKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	resp, err = client.Do(req)
 
-	if resp.StatusCode != 200 {
-		return nil, newApiError(resp, opts.Url)
-	}
-	if debug {
-		for k, v := range resp.Header {
-			fmt.Printf("[%s]:%v\n", k, v)
-		}
-	}
-
-	return resp.Header, nil
+	return
 
 	//return nil
 }
@@ -215,9 +202,11 @@ func CheckVersion(opts ClientOpts) error {
 	return err
 }
 
+/*该url禁用了header请求*/
+/*
 func GetImageDigest(opts ClientOpts, image string, tag string) (string, error) {
 	var digest string
-	/*该url禁用了header请求*/
+
 	opts.Url = opts.Url + "/" + "/v2/" + image + "/manifests/" + tag
 	header, err := doGetHeader(opts)
 	if err != nil {
@@ -236,32 +225,59 @@ func GetImageDigest(opts ClientOpts, image string, tag string) (string, error) {
 	return digest, nil
 
 }
+*/
 
 //根据打印列出指定数量的url
-func ListRepositoriesPagination(opts ClientOpts, n int) error {
-	var respObject map[string][]string
+func ListRepositoriesPagination(opts ClientOpts, n int) ([]byte, error) {
+	//	var respObject map[string][]string
 	if n == 0 {
 		opts.Url = opts.Url + "/v2/_catalog"
 	} else {
 		opts.Url = opts.Url + "/v2/_catalog?n=" + strconv.Itoa(n)
 	}
-	err := doGet(opts, &respObject)
-
-	for k, v := range respObject {
-		fmt.Println(k, v)
+	resp, err := doGet2(opts)
+	if err != nil {
+		debug_print(err)
+		return nil, err
 	}
-	return err
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	byteContent, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		debug_print(err)
+		return nil, err
+	}
+
+	return byteContent, err
 }
 
-func ListImageTags(opts ClientOpts, image string) error {
-	var respObject map[string]interface{}
+func ListImageTags(opts ClientOpts, image string) ([]byte, error) {
+	//	var respObject map[string]interface{}
 	opts.Url = opts.Url + "/v2/" + image + "/tags/list"
-	err := doGet(opts, &respObject)
-
-	for k, v := range respObject {
-		fmt.Println(k, v)
+	debug_print(opts.Url)
+	resp, err := doGet2(opts)
+	if err != nil {
+		debug_print(err)
+		return nil, err
 	}
-	return err
+
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	byteContent, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		debug_print(err)
+		return nil, err
+	}
+
+	return byteContent, err
 }
 
 func GetImageManifests(opts ClientOpts, image string, tag string) (Manifests, error) {
@@ -271,6 +287,7 @@ func GetImageManifests(opts ClientOpts, image string, tag string) (Manifests, er
 	return respObject, err
 }
 
+/*
 func DeleteImage(opts ClientOpts, image string, tag string) error {
 	defaultOpts := opts
 	digest, err := GetImageDigest(opts, image, tag)
@@ -283,7 +300,14 @@ func DeleteImage(opts ClientOpts, image string, tag string) error {
 	err = doDelete(opts)
 	return err
 }
+*/
+
+func debug_print(x interface{}) {
+	if debug {
+		fmt.Println(x)
+	}
+}
 
 func init() {
-	//debug = true
+	debug = true
 }
