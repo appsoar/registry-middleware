@@ -8,20 +8,17 @@ import (
 	//	"net/url" 需要使用url解析字符串,判定url是否合法
 	"bytes"
 	"encoding/json"
-	//	"errors"
+	"errors"
 	"io/ioutil"
+	"registry/debug"
 	"strconv"
-	//"strings"
+	"strings"
 	"time"
 )
 
 //默认超时时间
 const (
 	DefaultTimeOut time.Duration = time.Second * 10
-)
-
-var (
-	debug = false
 )
 
 /*客户端选项*/
@@ -109,9 +106,7 @@ func doGet(opts ClientOpts, respObject interface{}) (err error) {
 		return err
 	}
 
-	if debug {
-		fmt.Println("Respond <=" + string(byteContent))
-	}
+	debug.Print("Respond <=" + string(byteContent))
 	return json.Unmarshal(byteContent, respObject)
 	//return nil
 }
@@ -133,28 +128,6 @@ func doGet2(opts ClientOpts) (resp *http.Response, err error) {
 	return
 
 	//return nil
-}
-
-func doHeader(opts ClientOpts) (http.Header, error) {
-	if opts.Timeout == 0 {
-		opts.Timeout = DefaultTimeOut
-	}
-	client := &http.Client{Timeout: opts.Timeout}
-
-	req, err := http.NewRequest("HEAD", opts.Url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(opts.AccessKey, opts.SecretKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != 200 {
-		return nil, newApiError(resp, opts.Url)
-	}
-	return resp.Header, nil
 }
 
 func doDelete(opts ClientOpts) error {
@@ -203,29 +176,32 @@ func CheckVersion(opts ClientOpts) error {
 }
 
 /*该url禁用了header请求*/
-/*
-func GetImageDigest(opts ClientOpts, image string, tag string) (string, error) {
-	var digest string
+
+func GetImageDigest(opts ClientOpts, image string, tag string) (digest string, err error) {
 
 	opts.Url = opts.Url + "/" + "/v2/" + image + "/manifests/" + tag
-	header, err := doGetHeader(opts)
+	resp, err := doGet2(opts)
 	if err != nil {
-		return digest, err
+		return
 	}
-	for k, v := range header {
+
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	for k, v := range resp.Header {
 		if k == "Docker-Content-Digest" {
 			digest = strings.TrimLeft(v[0], "sha256:")
-			break
+			return
 		}
 	}
 
-	if digest == "" {
-		return digest, errors.New("headers don't have `Docker-Content-Digest` field")
-	}
-	return digest, nil
+	err = errors.New("headers don't have `Docker-Content-Digest` field")
+	return
 
 }
-*/
 
 //根据打印列出指定数量的url
 func ListRepositoriesPagination(opts ClientOpts, n int) ([]byte, error) {
@@ -237,7 +213,7 @@ func ListRepositoriesPagination(opts ClientOpts, n int) ([]byte, error) {
 	}
 	resp, err := doGet2(opts)
 	if err != nil {
-		debug_print(err)
+		debug.Print(err)
 		return nil, err
 	}
 	defer func() {
@@ -248,7 +224,7 @@ func ListRepositoriesPagination(opts ClientOpts, n int) ([]byte, error) {
 
 	byteContent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		debug_print(err)
+		debug.Print(err)
 		return nil, err
 	}
 
@@ -258,10 +234,10 @@ func ListRepositoriesPagination(opts ClientOpts, n int) ([]byte, error) {
 func ListImageTags(opts ClientOpts, image string) ([]byte, error) {
 	//	var respObject map[string]interface{}
 	opts.Url = opts.Url + "/v2/" + image + "/tags/list"
-	debug_print(opts.Url)
+	debug.Print(opts.Url)
 	resp, err := doGet2(opts)
 	if err != nil {
-		debug_print(err)
+		debug.Print(err)
 		return nil, err
 	}
 
@@ -273,7 +249,7 @@ func ListImageTags(opts ClientOpts, image string) ([]byte, error) {
 
 	byteContent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		debug_print(err)
+		debug.Print(err)
 		return nil, err
 	}
 
@@ -287,7 +263,6 @@ func GetImageManifests(opts ClientOpts, image string, tag string) (Manifests, er
 	return respObject, err
 }
 
-/*
 func DeleteImage(opts ClientOpts, image string, tag string) error {
 	defaultOpts := opts
 	digest, err := GetImageDigest(opts, image, tag)
@@ -299,15 +274,4 @@ func DeleteImage(opts ClientOpts, image string, tag string) error {
 	opts.Url = opts.Url + "/v2/" + image + "/manifests/" + digest
 	err = doDelete(opts)
 	return err
-}
-*/
-
-func debug_print(x interface{}) {
-	if debug {
-		fmt.Println(x)
-	}
-}
-
-func init() {
-	debug = true
 }

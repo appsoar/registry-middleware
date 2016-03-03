@@ -8,9 +8,11 @@ var (
 	debug = false
 )
 
-func print(dat interface{}) {
+func Print(dat ...interface{}) {
 	if debug {
-		fmt.Println(dat)
+		for _, v := range dat {
+			fmt.Println(v)
+		}
 	}
 
 }

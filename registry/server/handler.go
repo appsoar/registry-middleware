@@ -47,13 +47,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	fmt.Fprintf(w, id)
-}
-
-func ListImage(w http.ResponseWriter, r *http.Request) {
+func ListImages(w http.ResponseWriter, r *http.Request) {
 	resp := RespError{
 		Type:    "error",
 		Status:  500,
@@ -104,5 +98,32 @@ func ListImageTags(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(content))
 }
 
-func init() {
+func DeleteImageTag(w http.ResponseWriter, r *http.Request) {
+	resp := RespError{
+		Type:    "error",
+		Status:  500,
+		Code:    "500 Internal Server Error",
+		Message: "server cannot get tag list",
+	}
+
+	vars := mux.Vars(r)
+	image := vars["image"]
+	fmt.Println(image)
+	tag := vars["tag"]
+	fmt.Println(tag)
+
+	err := client.DeleteImage(opts, image, tag)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json;charset=utf-8")
+		w.WriteHeader(http.StatusInternalServerError)
+		resp.Message = err.Error()
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			panic(err)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "")
+
 }

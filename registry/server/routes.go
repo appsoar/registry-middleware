@@ -29,32 +29,25 @@ func NewRouter() *mux.Router {
 }
 
 var routes = Routes{
-	/*
-		Route{
-			"Index",
-			"GET",
-			"/",
-			Index,
-		},*/
 	Route{
 		"List",
 		"GET",
 		"/images",
-		ListImage,
+		ListImages,
 	},
 
 	Route{
-		"Tag",
+		"Image",
 		"GET",
 		//"/image/{image:[a-Z0-9]}/tag",
 		//注意:这会出现-在句首的错误
-		"/image/{image:[-a-zA-Z0-9]+(/[-a-zA-Z0-9]+)*}/tag",
+		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/tag",
 		ListImageTags,
 	},
 	Route{
-		"Tag2",
-		"GET",
-		"/{id:[a-zA-Z0-9]+[-a-zA-Z0-9]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}",
-		Index,
+		"Image",
+		"Delete",
+		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/{tag}",
+		DeleteImageTag,
 	},
 }
