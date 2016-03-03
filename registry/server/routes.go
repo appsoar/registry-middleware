@@ -41,13 +41,21 @@ var routes = Routes{
 		"GET",
 		//"/image/{image:[a-Z0-9]}/tag",
 		//注意:这会出现-在句首的错误
-		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/tag",
+		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9.]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/tag",
 		ListImageTags,
 	},
 	Route{
 		"Image",
+		"GET",
+		//"/image/{image:[a-Z0-9]}/tag",
+		//注意:这会出现-在句首的错误
+		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9.]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/{tag}/digest",
+		ListImageDigest,
+	},
+	Route{
+		"Image",
 		"Delete",
-		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/{tag}",
+		"/{image:[a-zA-Z0-9]+[-a-zA-Z0-9.]*(/[a-zA-Z0-9]+[-a-zA-Z0-9]*)*}/{tag}",
 		DeleteImageTag,
 	},
 }

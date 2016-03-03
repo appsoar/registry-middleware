@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 	"registry/debug"
 	"strconv"
-	"strings"
+	//	"strings"
 	"time"
 )
 
@@ -130,7 +130,7 @@ func doGet2(opts ClientOpts) (resp *http.Response, err error) {
 	//return nil
 }
 
-func doDelete(opts ClientOpts) error {
+func doDelete(opts ClientOpts) (resp *http.Response, err error) {
 	if opts.Timeout == 0 {
 		opts.Timeout = DefaultTimeOut
 	}
@@ -138,18 +138,12 @@ func doDelete(opts ClientOpts) error {
 
 	req, err := http.NewRequest("DELETE", opts.Url, nil)
 	if err != nil {
-		return err
+		return
 	}
 	req.SetBasicAuth(opts.AccessKey, opts.SecretKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
+	resp, err = client.Do(req)
 
-	if resp.StatusCode != 200 {
-		return newApiError(resp, opts.Url)
-	}
-	return nil
+	return
 }
 
 /*检测registry Api版本*/
@@ -177,7 +171,7 @@ func CheckVersion(opts ClientOpts) error {
 
 /*该url禁用了header请求*/
 
-func GetImageDigest(opts ClientOpts, image string, tag string) (digest string, err error) {
+func GetImageDigest(opts ClientOpts, image string, tag string) (docker_content_digest string, err error) {
 
 	opts.Url = opts.Url + "/" + "/v2/" + image + "/manifests/" + tag
 	resp, err := doGet2(opts)
@@ -193,11 +187,13 @@ func GetImageDigest(opts ClientOpts, image string, tag string) (digest string, e
 
 	for k, v := range resp.Header {
 		if k == "Docker-Content-Digest" {
-			digest = strings.TrimLeft(v[0], "sha256:")
+			//			digest = strings.TrimLeft(v[0], "sha256:")
+			docker_content_digest = v[0]
 			return
 		}
 	}
 
+	displayResp(*resp)
 	err = errors.New("headers don't have `Docker-Content-Digest` field")
 	return
 
@@ -265,13 +261,50 @@ func GetImageManifests(opts ClientOpts, image string, tag string) (Manifests, er
 
 func DeleteImage(opts ClientOpts, image string, tag string) error {
 	defaultOpts := opts
-	digest, err := GetImageDigest(opts, image, tag)
+	docker_content_digest, err := GetImageDigest(opts, image, tag)
 	if err != nil {
-		return errors.New("can't get digest")
+		return err
+	}
+	debug.Print(docker_content_digest)
+
+	//			digest = strings.TrimLeft(v[0], "sha256:")
+	opts = defaultOpts
+	opts.Url = opts.Url + "/v2/" + image + "/manifests/" + docker_content_digest
+	resp, err := doDelete(opts)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	if resp.StatusCode != 202 {
+		return newApiError(resp, opts.Url)
+	}
+	/*
+		if err != nil {
+			//  trim sha256:
+			opts = defaultOpts
+			digest := strings.TrimLeft(docker_content_digest, "sha256:")
+			opts.Url = opts.Url + "/v2/" + image + "/manifests/" + digest
+			err = doDelete(opts)
+		}*/
+	return nil
+}
+
+func displayResp(resp http.Response) {
+	if debug.Debug {
+		debug.Print("Header <===")
+		for k, v := range resp.Header {
+			debug.Print(k, v)
+		}
+		byteContent, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			debug.Print("read resp fail")
+		}
+		debug.Print("Respond <=" + string(byteContent))
 	}
 
-	opts = defaultOpts
-	opts.Url = opts.Url + "/v2/" + image + "/manifests/" + digest
-	err = doDelete(opts)
-	return err
 }

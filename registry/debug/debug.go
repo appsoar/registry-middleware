@@ -5,11 +5,11 @@ import (
 )
 
 var (
-	debug = false
+	Debug = false
 )
 
 func Print(dat ...interface{}) {
-	if debug {
+	if Debug {
 		for _, v := range dat {
 			fmt.Println(v)
 		}
@@ -18,5 +18,5 @@ func Print(dat ...interface{}) {
 }
 
 func init() {
-	debug = true
+	Debug = true
 }

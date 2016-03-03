@@ -6,11 +6,12 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"registry/client"
+	"registry/debug"
 )
 
 var (
 	opts = client.ClientOpts{
-		Url: "http://192.168.2.110:5000",
+		Url: "http://192.168.4.32:5050",
 	}
 )
 
@@ -53,9 +54,6 @@ func ListImages(w http.ResponseWriter, r *http.Request) {
 		Status:  500,
 		Code:    "500 Internal Server Error",
 		Message: "server cannot get image lists",
-	}
-	opts := client.ClientOpts{
-		Url: "http://192.168.2.110:5000",
 	}
 
 	content, err := client.ListRepositoriesPagination(opts, 0)
@@ -108,9 +106,8 @@ func DeleteImageTag(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	image := vars["image"]
-	fmt.Println(image)
 	tag := vars["tag"]
-	fmt.Println(tag)
+	debug.Print(image, tag)
 
 	err := client.DeleteImage(opts, image, tag)
 	if err != nil {
@@ -125,5 +122,34 @@ func DeleteImageTag(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "")
+
+}
+
+func ListImageDigest(w http.ResponseWriter, r *http.Request) {
+	resp := RespError{
+		Type:    "error",
+		Status:  500,
+		Code:    "500 Internal Server Error",
+		Message: "server cannot get tag list",
+	}
+
+	vars := mux.Vars(r)
+	image := vars["image"]
+	tag := vars["tag"]
+	debug.Print(image, tag)
+
+	digest, err := client.GetImageDigest(opts, image, tag)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json;charset=utf-8")
+		w.WriteHeader(http.StatusInternalServerError)
+		resp.Message = err.Error()
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			panic(err)
+		}
+		return
+	}
+	//	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, digest)
 
 }
