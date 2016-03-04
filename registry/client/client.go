@@ -3,22 +3,32 @@ package client
 //package main
 
 import (
-	"fmt"
-	"net/http"
-	//	"net/url" 需要使用url解析字符串,判定url是否合法
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"registry/debug"
 	"strconv"
-	//	"strings"
 	"time"
 )
 
 //默认超时时间
 const (
 	DefaultTimeOut time.Duration = time.Second * 10
+)
+
+type Op struct {
+	Name string
+}
+
+var (
+	Get    = Op{Name: "GET"}
+	Head   = Op{Name: "HEAD"}
+	Delete = Op{Name: "DELETE"}
+	Put    = Op{Name: "PUT"}
+	Post   = Op{Name: "POST"}
 )
 
 /*客户端选项*/
@@ -79,45 +89,13 @@ func newApiError(resp *http.Response, url string) *ApiError {
 	}
 }
 
-func doGet(opts ClientOpts, respObject interface{}) (err error) {
+func doAction(opts ClientOpts, op Op) (resp *http.Response, err error) {
 	if opts.Timeout == 0 {
 		opts.Timeout = DefaultTimeOut
 	}
 	client := &http.Client{Timeout: opts.Timeout}
 
-	req, err := http.NewRequest("GET", opts.Url, nil)
-	if err != nil {
-		return err
-	}
-
-	req.SetBasicAuth(opts.AccessKey, opts.SecretKey)
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return newApiError(resp, opts.Url)
-	}
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	debug.Print("Respond <=" + string(byteContent))
-	return json.Unmarshal(byteContent, respObject)
-	//return nil
-}
-
-func doGet2(opts ClientOpts) (resp *http.Response, err error) {
-	if opts.Timeout == 0 {
-		opts.Timeout = DefaultTimeOut
-	}
-	client := &http.Client{Timeout: opts.Timeout}
-
-	req, err := http.NewRequest("GET", opts.Url, nil)
+	req, err := http.NewRequest(op.Name, opts.Url, nil)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -130,51 +108,18 @@ func doGet2(opts ClientOpts) (resp *http.Response, err error) {
 	//return nil
 }
 
-func doDelete(opts ClientOpts) (resp *http.Response, err error) {
-	if opts.Timeout == 0 {
-		opts.Timeout = DefaultTimeOut
-	}
-	client := &http.Client{Timeout: opts.Timeout}
-
-	req, err := http.NewRequest("DELETE", opts.Url, nil)
-	if err != nil {
-		return
-	}
-	req.SetBasicAuth(opts.AccessKey, opts.SecretKey)
-	resp, err = client.Do(req)
-
-	return
-}
-
 /*检测registry Api版本*/
 func CheckVersion(opts ClientOpts) error {
-	var respObject map[string][]string
+	//	var respObject map[string][]string
 	opts.Url = opts.Url + "/v2"
-	err := doGet(opts, &respObject)
-	if err != nil {
-		//检测是否http请求触发的错误.
-		x, ok := interface{}(err).(ApiError)
-		if ok {
-			switch x.StatusCode {
-			default:
-				fmt.Println(err)
-			case 401:
-				//do something
-				fmt.Println(":未授权")
-			case 404:
-				fmt.Println(err)
-			}
-		}
-	}
+	_, err := doAction(opts, Get)
 	return err
 }
-
-/*该url禁用了header请求*/
 
 func GetImageDigest(opts ClientOpts, image string, tag string) (docker_content_digest string, err error) {
 
 	opts.Url = opts.Url + "/" + "/v2/" + image + "/manifests/" + tag
-	resp, err := doGet2(opts)
+	resp, err := doAction(opts, Get)
 	if err != nil {
 		return
 	}
@@ -207,7 +152,7 @@ func ListRepositoriesPagination(opts ClientOpts, n int) ([]byte, error) {
 	} else {
 		opts.Url = opts.Url + "/v2/_catalog?n=" + strconv.Itoa(n)
 	}
-	resp, err := doGet2(opts)
+	resp, err := doAction(opts, Get)
 	if err != nil {
 		debug.Print(err)
 		return nil, err
@@ -231,7 +176,7 @@ func ListImageTags(opts ClientOpts, image string) ([]byte, error) {
 	//	var respObject map[string]interface{}
 	opts.Url = opts.Url + "/v2/" + image + "/tags/list"
 	debug.Print(opts.Url)
-	resp, err := doGet2(opts)
+	resp, err := doAction(opts, Get)
 	if err != nil {
 		debug.Print(err)
 		return nil, err
@@ -252,11 +197,31 @@ func ListImageTags(opts ClientOpts, image string) ([]byte, error) {
 	return byteContent, err
 }
 
-func GetImageManifests(opts ClientOpts, image string, tag string) (Manifests, error) {
-	var respObject Manifests
+func GetImageManifests(opts ClientOpts, image string, tag string) (respObject Manifests, err error) {
+	var resp *http.Response
 	opts.Url = opts.Url + "/v2/" + image + "/manifests/" + tag
-	err := doGet(opts, &respObject)
-	return respObject, err
+
+	resp, err = doAction(opts, Get)
+	if err != nil {
+		debug.Print(err)
+		return
+	}
+
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+	if resp.StatusCode != 200 {
+		err = newApiError(resp, opts.Url)
+		return
+	}
+	byteContent, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(byteContent, interface{}(respObject))
+	return
 }
 
 func DeleteImage(opts ClientOpts, image string, tag string) error {
@@ -270,7 +235,7 @@ func DeleteImage(opts ClientOpts, image string, tag string) error {
 	//			digest = strings.TrimLeft(v[0], "sha256:")
 	opts = defaultOpts
 	opts.Url = opts.Url + "/v2/" + image + "/manifests/" + docker_content_digest
-	resp, err := doDelete(opts)
+	resp, err := doAction(opts, Delete)
 	if err != nil {
 		return err
 	}
@@ -283,14 +248,6 @@ func DeleteImage(opts ClientOpts, image string, tag string) error {
 	if resp.StatusCode != 202 {
 		return newApiError(resp, opts.Url)
 	}
-	/*
-		if err != nil {
-			//  trim sha256:
-			opts = defaultOpts
-			digest := strings.TrimLeft(docker_content_digest, "sha256:")
-			opts.Url = opts.Url + "/v2/" + image + "/manifests/" + digest
-			err = doDelete(opts)
-		}*/
 	return nil
 }
 

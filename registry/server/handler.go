@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 	"os"
 	"registry/client"
@@ -149,7 +150,7 @@ func init() {
 
 	opts.Url = os.Getenv("REGISTRY_URL")
 	if len(opts.Url) == 0 {
-		panic("missing REGISTRY_URL")
+		log.Fatal("ENV[REGISTRY_URL] is empty")
 	}
 	/*
 		opts.AccessKey = os.Getenv("REGISTRY_ACCESS_KEY")
