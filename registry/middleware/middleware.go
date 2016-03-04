@@ -6,6 +6,7 @@ import (
 
 var negronies = []negroni.Handler{
 	negroni.NewRecovery(),
+	NewMymw(),
 	negroni.NewLogger(),
 }
 
