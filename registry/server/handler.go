@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"os"
 	"registry/client"
 	"registry/debug"
 )
 
 var (
-	opts = client.ClientOpts{
-		Url: "http://192.168.4.32:5050",
-	}
+	opts client.ClientOpts
 )
 
 type RespError struct {
@@ -30,14 +29,6 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 		Code:    "404 not found",
 		Message: "The specified page not found",
 	}
-
-	/*
-		b, err := json.Marshal(resp)
-		if err != nil {
-			fmt.Println("json err:", err)
-			return
-		}
-	*/
 
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	w.WriteHeader(http.StatusNotFound)
@@ -152,4 +143,21 @@ func ListImageDigest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, digest)
 
+}
+
+func init() {
+
+	opts.Url = os.Getenv("REGISTRY_URL")
+	if len(opts.Url) == 0 {
+		panic("missing REGISTRY_URL")
+	}
+	/*
+		opts.AccessKey = os.Getenv("REGISTRY_ACCESS_KEY")
+		if len(opts.Url) == 0 {
+			panic("missing AccessKey")
+		}
+		opts.AccessKey = os.Getenv("REGISTRY_SECRET_KEY")
+		if len(opts.Url) == 0 {
+			panic("missing SecretKey")
+		}*/
 }

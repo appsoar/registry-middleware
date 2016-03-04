@@ -1,21 +1,25 @@
 package main
 
 import (
-	//	"fmt"
-	"net/http"
+	"registry/middleware"
 	"registry/server"
 )
 
-type ServerOpts struct {
+type serverOpts struct {
 	host string
 }
 
 const (
-	TestHost = "192.168.2.110:5000"
+	host = ":9090"
 )
 
 func main() {
-	opts := ServerOpts{host: "192.168.2.110:9090"}
+	opts := serverOpts{host: host}
+	//创建Url路由
 	router := server.NewRouter()
-	http.ListenAndServe(opts.host, router)
+	//添加web中间件
+	n := middleware.New()
+	//将router添加到中间件栈最底端
+	n.UseHandler(router)
+	n.Run(opts.host)
 }

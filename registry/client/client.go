@@ -119,7 +119,7 @@ func doGet2(opts ClientOpts) (resp *http.Response, err error) {
 
 	req, err := http.NewRequest("GET", opts.Url, nil)
 	if err != nil {
-		return
+		panic(err.Error())
 	}
 
 	req.SetBasicAuth(opts.AccessKey, opts.SecretKey)
@@ -194,7 +194,7 @@ func GetImageDigest(opts ClientOpts, image string, tag string) (docker_content_d
 	}
 
 	displayResp(*resp)
-	err = errors.New("headers don't have `Docker-Content-Digest` field")
+	errors.New("headers don't have `Docker-Content-Digest` field")
 	return
 
 }
