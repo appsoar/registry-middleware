@@ -29,10 +29,25 @@ func NewRouter() *mux.Router {
 }
 
 var routes = Routes{
+	/*
+		Route{
+			"List",
+			"GET",
+			"/images",
+			ListImages,
+		},
+	*/
+	/*
+		Route{
+			"Login",
+			"GET",
+			"/v2/login",
+			ShowLogin,
+		},*/
 	Route{
-		"List",
-		"GET",
-		"/images",
-		ListImages,
+		"Login",
+		"POST",
+		"/v2/login",
+		Login,
 	},
 }

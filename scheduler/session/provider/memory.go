@@ -1,4 +1,4 @@
-package memory
+package provider
 
 import (
 	"container/list"
@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+//全局链表
 var pder = &Provider{list: list.New()}
 
 type SessionStore struct {
@@ -49,6 +50,7 @@ type Provider struct {
 	list     *list.List
 }
 
+//
 func (pder *Provider) SessionInit(sid string) (session.Session, error) {
 	pder.lock.Lock()
 	defer pder.lock.Unlock()
@@ -106,6 +108,7 @@ func (pder *Provider) SessionUpdate(sid string) error {
 		pder.list.MoveToFront(element)
 		return nil
 	}
+	return nil
 }
 
 func init() {

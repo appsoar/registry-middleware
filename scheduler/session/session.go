@@ -1,21 +1,21 @@
 package session
 
 import (
-	"crpyt/rand"
+	"crypto/rand"
 	"encoding/base64"
 	//	"error"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	_ "scheduler/providers/memory"
+	//_ "scheduler/session/provider"
 	"sync"
 	"time"
 )
 
 var (
-	globalSessions *session.Manager
-	provides       = make(map[string]Provide)
+	//globalSessions *session.Manager
+	provides = make(map[string]Provider)
 )
 
 type Session interface {
@@ -39,6 +39,7 @@ type Provider interface {
 	SessionGC(maxLifeTIme int64)
 }
 
+//获取全局唯一的session id
 func (manager *Manager) sessionId() string {
 	b := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
@@ -47,11 +48,14 @@ func (manager *Manager) sessionId() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
+//检测是否已经有某个session和当前的来访用户发生了关联,如果没有则创建
 func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (session Session) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
+	//获取requset中session相关的cookie信息
 	cookie, err := r.Cookie(manager.cookieName)
+	//cookie值为空,没有关联session
 	if err != nil || cookie.Value == "" {
 		sid := manager.sessionId()
 		session, _ = manager.provider.SessionInit(sid)
@@ -62,15 +66,17 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 			HttpOnly: true,
 			MaxAge:   int(manager.maxlifetime),
 		}
-
+		//增加cookie到回应头
 		http.SetCookie(w, &cookie)
 	} else {
 		sid, _ := url.QueryUnescape(cookie.Value)
 		session, _ = manager.provider.SessionRead(sid)
 	}
+	return
 }
 
 func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
+	//获取session相关的cookie信息
 	cookie, err := r.Cookie(manager.cookieName)
 	if err != nil || cookie.Value == "" {
 		return
@@ -98,7 +104,8 @@ func (manager *Manager) GC() {
 	time.AfterFunc(time.Duration(manager.maxlifetime), func() { manager.GC() })
 }
 
-func NewManager(providerName, cookieName, string, maxlifetime int64) (*Manager, error) {
+//创建新的session管理器
+func NewManager(providerName, cookieName string, maxlifetime int64) (*Manager, error) {
 	provider, ok := provides[providerName]
 	if !ok {
 		return nil, fmt.Errorf("session: unknown provide %q (forgotten import ?)", providerName)
@@ -107,7 +114,7 @@ func NewManager(providerName, cookieName, string, maxlifetime int64) (*Manager, 
 	return &Manager{provider: provider, cookieName: cookieName, maxlifetime: maxlifetime}, nil
 }
 
-func Register(name string, provide Provide) {
+func Register(name string, provide Provider) {
 	if provide == nil {
 		panic("session: Register provide is nil")
 	}
@@ -118,6 +125,7 @@ func Register(name string, provide Provide) {
 	provides[name] = provide
 }
 
+/*
 func init() {
 	var err error
 	globalSessions, err = NewManager("memory", "gosessionid", 3600)
@@ -126,3 +134,4 @@ func init() {
 	}
 	go globalSessions.GC()
 }
+*/

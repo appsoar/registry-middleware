@@ -1,5 +1,9 @@
 package scheduler
 
+import (
+	"time"
+)
+
 type Comment struct {
 	User    string    `json:"user"`
 	Date    time.Time `json:"date"`

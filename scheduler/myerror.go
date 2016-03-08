@@ -1,8 +1,6 @@
 package scheduler
 
-import (
-	"errors"
-)
+import ()
 
 const (
 	ErrorNotValidEntity = 422
@@ -33,4 +31,5 @@ func NotValidEntityError(msg string) RespError {
 		Code:    "Unprocessable Entity",
 		Message: msg,
 	}
+	return resp
 }

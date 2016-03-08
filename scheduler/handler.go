@@ -3,10 +3,25 @@ package scheduler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
+	//	"github.com/gorilla/mux"
+	"html/template"
 	"net/http"
-	"regexp"
-	"scheduler/errors"
+	//	"regexp"
+	//	"scheduler/errors"
+	//"scheduler/session/session"
+	"golang.org/x/net/websocket"
+	"io/ioutil"
+	"scheduler/session"
+	_ "scheduler/session/provider"
+	"time"
+)
+
+const (
+	loginPage = "login.gtpl"
+)
+
+var (
+	globalSessions *session.Manager
 )
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +46,7 @@ func SetImagesProperty(w http.ResponseWriter, r *http.Request) {
 	//还要检测镜像是否存在
 	//需要加锁
 	if len(r.Form["name"][0]) == 0 {
-		resp := NoValidEntityError("name cannot be empty")
+		resp := NotValidEntityError("name cannot be empty")
 		w.Header().Set("Content-Type", "application/json;charset=utf-8")
 		//返回状态码422,未在net/http中实现,使用自定义的422
 		w.WriteHeader(ErrorNotValidEntity)
@@ -43,15 +58,32 @@ func SetImagesProperty(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
-	err := r.PostForm()
+func GetImageProperty(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf(w, "")
+}
 
+type LoginInfo struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+
+	var info LoginInfo
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(string(body))
 
-	if len(r.Form["username"][0]) == 0 || len(r.Form["password"]) == 0 {
-		resp := NoValidEntityError("name cannot be empty")
+	//转换成byte
+	err = json.Unmarshal(body, &info)
+	if err != nil {
+		panic(err)
+	}
+	if len(info.Username) == 0 || len(info.Password) == 0 {
+		resp := NotValidEntityError("invalid username or password ")
 		w.Header().Set("Content-Type", "application/json;charset=utf-8")
 		//返回状态码422,未在net/http中实现,使用自定义的422
 		w.WriteHeader(ErrorNotValidEntity)
@@ -60,9 +92,43 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
-	//连接数据库进行验证
-	//验证通过
-	//先不用cookie
-	//	cookie := http.Cookie{Name:""}
+	/*未实现,密码验证*/
+	sess := globalSessions.SessionStart(w, r)
+	sess.Set("username", info.Username)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "")
+}
 
+//router.Handler(websocket.Handler(GetSystemInfo)
+func GetSystemInfo(ws *websocket.Conn) {
+	var err error
+	for {
+		t := time.Unix(t, 0).String()
+		if err = websocket.Message.Send(ws, msg); err != nil {
+			//		panic("")
+			panic(error)
+			break
+		}
+		time.Sleep(1 * time.Second)
+
+	}
+
+}
+
+func ShowLogin(w http.ResponseWriter, r *http.Request) {
+	sess := globalSessions.SessionStart(w, r)
+	t, _ := template.ParseFiles(loginPage)
+	w.Header().Set("Content-Type", "text/html")
+	t.Execute(w, sess.Get("username"))
+
+}
+
+func init() {
+	var err error
+	//创建一个全局的session管理器,session存储方式为内存,cookie名为gosessionid
+	globalSessions, err = session.NewManager("memory", "gosessionid", 3600)
+	if err != nil {
+		panic(err)
+	}
+	go globalSessions.GC()
 }
