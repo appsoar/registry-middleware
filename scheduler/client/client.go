@@ -56,3 +56,43 @@ func NewClient() (*Client, error) {
 	//	client.BaseClient.Opts = opts
 	return client, nil
 }
+
+func (c *Client) GetCpuUsage() (interface{}, error) {
+	//	cpuUsage,err := c.sysInfo.
+	//c.sysInfo.GetCpuUsage()
+	return nil, nil
+}
+
+func (c *Client) GetRamUsage() (interface{}, error) {
+	//	cpuUsage,err := c.sysInfo.
+	//c.sysInfo.GetRamUsage()
+	return nil, nil
+}
+
+func (c *Client) GetDiskUsage() (interface{}, error) {
+	//	cpuUsage,err := c.sysInfo.
+	//c.sysInfo.GetRamUsage()
+	return nil, nil
+}
+func (c *Client) ListImages() (interface{}, error) {
+	images, err := c.registry.ListImages()
+	return images, err
+}
+
+func (c *Client) GetImageTags(image string) (interface{}, error) {
+
+	tags, err := c.registry.GetImageTags(image)
+	return tags, err
+}
+
+func (c *Client) GetImageDigest(image string, tag string) (interface{}, error) {
+
+	digest, err := c.registry.GetImageDigest(image, tag)
+	return digest, err
+}
+
+func (c *Client) DeleteImageDigest(image string, tag string) error {
+
+	err := c.registry.DeleteImageTag(image, tag)
+	return err
+}
