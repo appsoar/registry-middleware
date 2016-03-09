@@ -11,6 +11,7 @@ import (
 	//"scheduler/session/session"
 	"golang.org/x/net/websocket"
 	"io/ioutil"
+	"scheduler/client"
 	"scheduler/session"
 	_ "scheduler/session/provider"
 	"time"
@@ -22,6 +23,7 @@ const (
 
 var (
 	globalSessions *session.Manager
+	globalClient   *client.Client
 )
 
 func NotFound(w http.ResponseWriter, r *http.Request) {
@@ -100,12 +102,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 //router.Handler(websocket.Handler(GetSystemInfo)
-func GetSystemInfo(ws *websocket.Conn) {
+//这里返回有所有的系统相关数据？
+func GetCpuInfo(ws *websocket.Conn) {
 	var err error
+	//cpuchan := make(chan SystemInfo)
+	//memchan := make(chan .....)
+	//diskchan := make(chan....)
 	for {
-		t := time.Unix(t, 0).String()
+		//	cpuUsedRate := client.GetCpuInfo
+		// 这里可以使用goroutine+channel来并发?
+		//go fun() {
+		//  cpuchan <- client.GetCpuInfo()
+		//}()
+		//  cpuinfos := <- cpuchan
+
 		if err = websocket.Message.Send(ws, msg); err != nil {
-			//		panic("")
 			panic(error)
 			break
 		}
@@ -125,6 +136,11 @@ func ShowLogin(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	var err error
+
+	globalClient, err = client.NewClient()
+	if err != nil {
+		panic(err)
+	}
 	//创建一个全局的session管理器,session存储方式为内存,cookie名为gosessionid
 	globalSessions, err = session.NewManager("memory", "gosessionid", 3600)
 	if err != nil {
