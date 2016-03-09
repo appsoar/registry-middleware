@@ -10,7 +10,7 @@ var (
 
 type SysInfoClient interface {
 	/*里面提供的方法再定*/
-	GetCpuUsage()
+	GetCpuUsage() int
 	GetRamUsage()
 	GetDiskUsage()
 }
