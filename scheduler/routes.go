@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"github.com/gorilla/mux"
+	"golang.org/x/net/websocket"
 	"net/http"
 )
 
@@ -25,6 +26,7 @@ func NewRouter() *mux.Router {
 			Handler(route.HandlerFunc)
 	}
 
+	router.Path("/v2/sysinfo").Handler(websocket.Handler(GetSysInfo))
 	return router
 }
 
@@ -37,13 +39,13 @@ var routes = Routes{
 			ListImages,
 		},
 	*/
-	/*
-		Route{
-			"Login",
-			"GET",
-			"/v2/login",
-			ShowLogin,
-		},*/
+	/*websocket can't use
+	Route{
+		"Login",
+		"GET",
+		"/v2/sysinfo",
+		websocket.Handler(GetSysInfo),
+	},*/
 	Route{
 		"Login",
 		"POST",

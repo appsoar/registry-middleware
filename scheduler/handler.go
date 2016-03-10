@@ -61,7 +61,7 @@ func SetImagesProperty(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetImageProperty(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf(w, "")
+	//	fmt.Printf(w, "")
 }
 
 type LoginInfo struct {
@@ -103,22 +103,24 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 //router.Handler(websocket.Handler(GetSystemInfo)
 //这里返回有所有的系统相关数据？
-func GetCpuInfo(ws *websocket.Conn) {
-	var err error
+func GetSysInfo(ws *websocket.Conn) {
+	//	var err error
 	//cpuchan := make(chan SystemInfo)
 	//memchan := make(chan .....)
 	//diskchan := make(chan....)
 	for {
-		//	cpuUsedRate := client.GetCpuInfo
-		// 这里可以使用goroutine+channel来并发?
-		//go fun() {
-		//  cpuchan <- client.GetCpuInfo()
-		//}()
-		//  cpuinfos := <- cpuchan
+		sysinfo, err := globalClient.GetSysInfo()
+		if err != nil {
+			panic(err)
+		}
 
-		if err = websocket.Message.Send(ws, msg); err != nil {
-			panic(error)
-			break
+		b, err := json.Marshal(sysinfo)
+		if err != nil {
+			panic(err)
+		}
+
+		if err = websocket.Message.Send(ws, string(b)); err != nil {
+			panic(err)
 		}
 		time.Sleep(1 * time.Second)
 
@@ -136,7 +138,7 @@ func ShowLogin(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	var err error
-
+	//所有的客户端请求通过globalClient完成
 	globalClient, err = client.NewClient()
 	if err != nil {
 		panic(err)

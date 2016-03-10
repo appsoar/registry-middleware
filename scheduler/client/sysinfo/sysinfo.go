@@ -10,9 +10,10 @@ var (
 
 type SysInfoClient interface {
 	/*里面提供的方法再定*/
-	GetCpuUsage() int
-	GetRamUsage()
-	GetDiskUsage()
+	GetCpuUsage() (int, error)
+
+	GetRamStat() (uint64, uint64, error)
+	GetDiskStat() (uint64, uint64, error)
 }
 
 func RegisterSysinfoClient(name string, client SysInfoClient) error {

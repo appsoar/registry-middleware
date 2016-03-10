@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"scheduler/client/database"
 	"scheduler/client/registry"
 	"scheduler/client/sysinfo"
@@ -57,23 +58,66 @@ func NewClient() (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) GetCpuUsage() (interface{}, error) {
+type SysInfo struct {
+	CpuUsage      int    `json:"cpuUsage"`
+	TotalRam      uint64 `json:"totalRam"`
+	AvailableRam  uint64 `json:"availableRam"`
+	TotalDisk     uint64 `json:"totalDisk"`
+	AvailableDisk uint64 `json:"availableDisk"`
+}
+
+func (c *Client) GetSysInfo() (SysInfo, error) {
 	//	cpuUsage,err := c.sysInfo.
 	//c.sysInfo.GetCpuUsage()
-	return nil, nil
+	sysinfo := new(SysInfo)
+	var cpuchan = make(chan int)
+	var ramchan = []chan uint64{
+		make(chan uint64),
+		make(chan uint64),
+	}
+	var diskchan = []chan uint64{
+		make(chan uint64),
+		make(chan uint64),
+	}
+
+	go func() {
+		cpuUsage, err := c.sysInfo.GetCpuUsage()
+		if err != nil {
+			panic(err)
+		}
+		cpuchan <- cpuUsage
+	}()
+
+	go func() {
+		totalRam, availableRam, err := c.sysInfo.GetRamStat()
+		if err != nil {
+			panic(err)
+		}
+		ramchan[0] <- totalRam
+		ramchan[1] <- availableRam
+	}()
+
+	go func() {
+		totalDisk, availableDisk, err := c.sysInfo.GetDiskStat()
+		if err != nil {
+			panic(err)
+		}
+		diskchan[0] <- totalDisk
+		diskchan[1] <- availableDisk
+	}()
+
+	sysinfo.CpuUsage = <-cpuchan
+	sysinfo.TotalRam = <-ramchan[0]
+	sysinfo.AvailableRam = <-ramchan[1]
+	sysinfo.TotalDisk = <-diskchan[0]
+	sysinfo.AvailableDisk = <-diskchan[1]
+
+	fmt.Printf("cpu:%v, total:%v,avail:%v, total:%v,avail:%v\n", sysinfo.CpuUsage, sysinfo.TotalRam, sysinfo.AvailableRam, sysinfo.TotalRam, sysinfo.AvailableDisk)
+
+	return *sysinfo, nil
+
 }
 
-func (c *Client) GetRamUsage() (interface{}, error) {
-	//	cpuUsage,err := c.sysInfo.
-	//c.sysInfo.GetRamUsage()
-	return nil, nil
-}
-
-func (c *Client) GetDiskUsage() (interface{}, error) {
-	//	cpuUsage,err := c.sysInfo.
-	//c.sysInfo.GetRamUsage()
-	return nil, nil
-}
 func (c *Client) ListImages() (interface{}, error) {
 	images, err := c.registry.ListImages()
 	return images, err
