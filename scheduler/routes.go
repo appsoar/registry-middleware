@@ -27,6 +27,7 @@ func NewRouter() *mux.Router {
 	}
 
 	router.Path("/v2/sysinfo").Handler(websocket.Handler(GetSysInfo))
+	router.Path("/v2/logs").Handler(websocket.Handler(GetLog))
 	return router
 }
 
@@ -51,5 +52,17 @@ var routes = Routes{
 		"POST",
 		"/v2/login",
 		Login,
+	},
+	Route{
+		"Logout",
+		"GET",
+		"/v2/logout",
+		Logout,
+	},
+	Route{
+		"Test",
+		"GET",
+		"/v2/test",
+		Test,
 	},
 }

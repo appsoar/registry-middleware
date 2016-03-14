@@ -16,6 +16,7 @@ type DirectClient struct {
 
 func init() {
 	//初始化registry 服务器的配置参数
+	//使用环境 变量
 	opts := &common.ClientOpts{
 		Url:       "http://192.168.4.32:5050",
 		AccessKey: "",

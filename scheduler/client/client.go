@@ -1,10 +1,11 @@
 package client
 
 import (
-	"fmt"
+	//	"fmt"
 	"scheduler/client/database"
 	"scheduler/client/registry"
 	"scheduler/client/sysinfo"
+	"scheduler/log"
 )
 
 /*
@@ -59,17 +60,18 @@ func NewClient() (*Client, error) {
 }
 
 type SysInfo struct {
-	CpuUsage      int    `json:"cpuUsage"`
-	TotalRam      uint64 `json:"totalRam"`
-	AvailableRam  uint64 `json:"availableRam"`
-	TotalDisk     uint64 `json:"totalDisk"`
-	AvailableDisk uint64 `json:"availableDisk"`
+	CpuUsage      int               `json:"cpuUsage"`
+	TotalRam      uint64            `json:"totalRam"`
+	AvailableRam  uint64            `json:"availableRam"`
+	TotalDisk     uint64            `json:"totalDisk"`
+	AvailableDisk uint64            `json:"availableDisk"`
+	NetStat       []sysinfo.NetStat `json:"netStat"`
 }
 
 func (c *Client) GetSysInfo() (SysInfo, error) {
 	//	cpuUsage,err := c.sysInfo.
 	//c.sysInfo.GetCpuUsage()
-	sysinfo := new(SysInfo)
+	info := new(SysInfo)
 	var cpuchan = make(chan int)
 	var ramchan = []chan uint64{
 		make(chan uint64),
@@ -79,6 +81,7 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 		make(chan uint64),
 		make(chan uint64),
 	}
+	var netchan = make(chan []sysinfo.NetStat)
 
 	go func() {
 		cpuUsage, err := c.sysInfo.GetCpuUsage()
@@ -106,33 +109,65 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 		diskchan[1] <- availableDisk
 	}()
 
-	sysinfo.CpuUsage = <-cpuchan
-	sysinfo.TotalRam = <-ramchan[0]
-	sysinfo.AvailableRam = <-ramchan[1]
-	sysinfo.TotalDisk = <-diskchan[0]
-	sysinfo.AvailableDisk = <-diskchan[1]
+	go func() {
+		netStat, err := c.sysInfo.GetNetStat()
+		if err != nil {
+			panic(err)
+		}
+		netchan <- netStat
+	}()
 
-	fmt.Printf("cpu:%v, total:%v,avail:%v, total:%v,avail:%v\n", sysinfo.CpuUsage, sysinfo.TotalRam, sysinfo.AvailableRam, sysinfo.TotalRam, sysinfo.AvailableDisk)
+	info.CpuUsage = <-cpuchan
+	info.TotalRam = <-ramchan[0]
+	info.AvailableRam = <-ramchan[1]
+	info.TotalDisk = <-diskchan[0]
+	info.AvailableDisk = <-diskchan[1]
+	info.NetStat = <-netchan
 
-	return *sysinfo, nil
+	log.Logger.Debug("cpu:%v, total:%v,avail:%v, total:%v,avail:%v\n", info.CpuUsage, info.TotalRam, info.AvailableRam, info.TotalRam, info.AvailableDisk)
+	log.Logger.Debug("%+v", info.NetStat)
+
+	return *info, nil
 
 }
 
-func (c *Client) ListImages() (interface{}, error) {
+func (c *Client) ListImages() ([]string, error) {
 	images, err := c.registry.ListImages()
-	return images, err
+	if err != nil {
+		return nil, err
+	}
+	list, ok := images.([]string)
+	if !ok {
+		panic("low-level registry api have changed")
+	}
+
+	return list, nil
 }
 
-func (c *Client) GetImageTags(image string) (interface{}, error) {
+func (c *Client) GetImageTags(image string) ([]string, error) {
 
 	tags, err := c.registry.GetImageTags(image)
-	return tags, err
+	if err != nil {
+		return nil, err
+	}
+	list, ok := tags.([]string)
+	if !ok {
+		panic("low-level registry api have changed")
+	}
+	return list, nil
 }
 
-func (c *Client) GetImageDigest(image string, tag string) (interface{}, error) {
+func (c *Client) GetImageDigest(image string, tag string) (string, error) {
 
 	digest, err := c.registry.GetImageDigest(image, tag)
-	return digest, err
+	if err != nil {
+		return "", err
+	}
+	dg, ok := digest.(string)
+	if !ok {
+		panic("low-level registry api have changed")
+	}
+	return dg, nil
 }
 
 func (c *Client) DeleteImageDigest(image string, tag string) error {
@@ -140,3 +175,31 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 	err := c.registry.DeleteImageTag(image, tag)
 	return err
 }
+
+/*
+type Comment struct {
+	Time    string `json:"time"`
+	User    string `json:"user"`
+	Content string `json:"content"`
+}
+
+type ImageProperty struct {
+	Name        string    `json:"name"`
+	Public      bool      `json:"public"`
+	Namespace   string    `json:"namespace"`
+	Tags        []string  `json:"tags"`
+	Download    uint      `json:"download"`
+	Description string    `json:"description"`
+	Comments    []Comment `json:"comments"`
+}
+
+func (c *Client) GetImageProperty(image string) ImageProperty {
+	return nil
+}
+
+func (c *Client) SetImagePublic(Public bool) {
+	return true
+}
+
+func (c *Client) SearchImage(image string) ImageProperty {
+}*/

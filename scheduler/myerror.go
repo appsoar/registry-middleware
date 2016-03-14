@@ -33,3 +33,10 @@ func NotValidEntityError(msg string) RespError {
 	}
 	return resp
 }
+
+type UnloginUserError struct {
+}
+
+func (e UnloginUserError) Error() string {
+	return "not logined user"
+}

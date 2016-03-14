@@ -8,12 +8,19 @@ var (
 	sysInfoClients map[string]SysInfoClient
 )
 
+type NetStat struct {
+	Iface   string `json:"iface"`
+	TxBytes uint64 `json:"TxBytes"`
+	RxBytes uint64 `json:"RxBytes"`
+}
+
 type SysInfoClient interface {
 	/*里面提供的方法再定*/
 	GetCpuUsage() (int, error)
 
 	GetRamStat() (uint64, uint64, error)
 	GetDiskStat() (uint64, uint64, error)
+	GetNetStat() ([]NetStat, error)
 }
 
 func RegisterSysinfoClient(name string, client SysInfoClient) error {

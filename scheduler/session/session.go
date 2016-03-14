@@ -20,7 +20,7 @@ var (
 
 type Session interface {
 	Set(key, value interface{}) error
-	Get(key interface{}) interface{}
+	Get(key interface{}) interface{} //获取session存储的键值对.比如当前实现中"username"为sessionID绑定的用户名
 	Delete(key interface{}) error
 	SessionID() string
 }
@@ -48,7 +48,8 @@ func (manager *Manager) sessionId() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-//检测是否已经有某个session和当前的来访用户发生了关联,如果没有则创建
+//检测是否已经有某个session和当前的来访用户发生了关联,如果没有则创建,
+//有则返回.*通过session.value可以获取session相关的参数.比如说sessionid对应的用户名
 func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (session Session) {
 	manager.lock.Lock()
 	defer manager.lock.Unlock()

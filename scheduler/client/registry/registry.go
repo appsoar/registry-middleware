@@ -8,6 +8,7 @@ var (
 	registryClients map[string]RegistryClient
 )
 
+//使用interface{}为了避免底层获取数据结构的改变
 type RegistryClient interface {
 	ListImages() (interface{}, error)
 	GetImageTags(string) (interface{}, error)
