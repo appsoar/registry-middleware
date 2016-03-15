@@ -6,17 +6,33 @@ import (
 	//	 "scheduler/client/database/local"
 )
 
-type UserInfo struct {
-	username string
-	password string
-}
-
 var (
 	databaseClients map[string]DatabaseClient
 )
 
+type UserInfo struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Namespace struct {
+	Name  string     `json:"namespace"`
+	Users []UserInfo `json:"users"`
+}
+
+type ImageInfo struct {
+}
+
 type DatabaseClient interface {
-	GetUserInfo(username string) (UserInfo, error)
+	GetUserInfo(string) (UserInfo, error)
+	AddUser(UserInfo) error
+	DelUser(UserInfo) error
+	GetNamespaceInfo() (Namespace, error)
+	AddNamespace(Namespace) error
+	DelNamespace(Namespace) error
+
+	GetImageInfo(string) (ImageInfo, error)
+	DelImageTag(string) error
 }
 
 /*

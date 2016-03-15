@@ -3,14 +3,9 @@ package scheduler
 import (
 	"encoding/json"
 	"fmt"
-	//	"github.com/gorilla/mux"
-	//	"html/template"
-	"net/http"
-	//	"regexp"
-	//	"scheduler/errors"
-	//"scheduler/session/session"
 	"golang.org/x/net/websocket"
 	"io/ioutil"
+	"net/http"
 	"scheduler/client"
 	"scheduler/log"
 	"scheduler/session"
@@ -23,13 +18,25 @@ var (
 	globalClient   *client.Client
 )
 
+type schedulerHandler func(http.ResponseWriter, *http.Request) error
+
+func (fn schedulerHandler) ServeHttp(w http.ResponseWriter, r *http.Request) {
+	if err := fn(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		//转换成respError
+		//类型断言处理
+	}
+	//否则返回正确信息
+}
+
 func getRequestUser(w http.ResponseWriter, r *http.Request) (string, error) {
 	sess := globalSessions.SessionStart(w, r)
 	strI := sess.Get("username")
 	if strI == nil {
 		log.Logger.Warn("invalid logout request")
 		globalSessions.SessionDestroy(w, r)
-		return "", &UnloginUserError{}
+		e := NewUnauthorizedError("user doesn't login")
+		errJsonReturn(w, r, e)
 	}
 
 	username, ok := strI.(string)
@@ -42,48 +49,76 @@ func getRequestUser(w http.ResponseWriter, r *http.Request) (string, error) {
 	return username, nil
 }
 
-func NotFound(w http.ResponseWriter, r *http.Request) {
-	resp := NotFoundError("The specified page not found")
-
+//错误状态JSON返回
+func errJsonReturn(w http.ResponseWriter, r *http.Request, err error) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	w.WriteHeader(http.StatusNotFound)
-	/*将结构体转换成json*/
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		panic(err)
-	}
+	switch e := err.(type) {
+	//为什么以下类型断言错误类型不能放在同一个case中,会报e.resp错误
+	//类型断言时如果多个类型放在switch case,go语言不知道使用哪个
+	//因此go会使用原来的类型(这里是error)
+	case UnauthorizedError:
 
+		w.WriteHeader(e.resp.Status)
+		if err := json.NewEncoder(w).Encode(e.resp); err != nil {
+			panic(err)
+		}
+	case NotFoundError:
+		w.WriteHeader(e.resp.Status)
+		if err := json.NewEncoder(w).Encode(e.resp); err != nil {
+			panic(err)
+		}
+	case NotValidEntityError:
+		w.WriteHeader(e.resp.Status)
+		if err := json.NewEncoder(w).Encode(e.resp); err != nil {
+			panic(err)
+		}
+
+	case InternalServerError:
+		w.WriteHeader(e.resp.Status)
+		if err := json.NewEncoder(w).Encode(e.resp); err != nil {
+			panic(err)
+		}
+	default:
+		panic("not json return error")
+	}
+}
+
+//无效url请求
+func NotFound(w http.ResponseWriter, r *http.Request) {
+	e := NewNotFoundError("specified page not found")
+	errJsonReturn(w, r, e)
 }
 
 func SetImagesProperty(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+
+	user, err := getRequestUser(w, r)
+	if err != nil {
+		e := NewUnauthorizedError("user doesn't login")
+		errJsonReturn(w, r, e)
+	}
+	log.Debug(user + "set image")
+
+	err = r.ParseForm()
 	if err != nil {
 		//这里应该返回一个500,主机出错
-		panic(err)
+		e := NewInternalServerError("request form parse fail:" + err.Error())
+		errJsonReturn(w, r, e)
 	}
-	//返回422无法处理的对象
 	//还要检测镜像是否存在
 	//需要加锁
 	if len(r.Form["name"][0]) == 0 {
-		resp := NotValidEntityError("name cannot be empty")
-		w.Header().Set("Content-Type", "application/json;charset=utf-8")
-		//返回状态码422,未在net/http中实现,使用自定义的422
-		w.WriteHeader(ErrorNotValidEntity)
-		/*将结构体转换成json*/
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			panic(err)
-		}
+		e := NewNotValidEntityError("name cannot be empty")
+		errJsonReturn(w, r, e)
 	}
 
 }
 
 func GetImageProperty(w http.ResponseWriter, r *http.Request) {
-	//
+
 	user, err := getRequestUser(w, r)
 	if err != nil {
-		if _, ok := err.(UnloginUserError); ok {
-			//返回错误,error json
-			return
-		}
+		e := NewUnauthorizedError("user doesn't login")
+		errJsonReturn(w, r, e)
 	}
 
 	r.ParseForm()
@@ -120,14 +155,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(info.Username) == 0 || len(info.Password) == 0 {
 		log.Logger.Info("invalid username or password")
-		resp := NotValidEntityError("invalid username or password ")
-		w.Header().Set("Content-Type", "application/json;charset=utf-8")
-		//返回状态码422,未在net/http中实现,使用自定义的422
-		w.WriteHeader(ErrorNotValidEntity)
-		/*将结构体转换成json*/
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			panic(err)
-		}
+		e := NewUnauthorizedError("invalid username or password ")
+		errJsonReturn(w, r, e)
 	}
 	/*未实现,密码验证*/
 	sess := globalSessions.SessionStart(w, r)
@@ -146,7 +175,8 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	if strI == nil {
 		log.Logger.Warn("invalid logout request")
 		globalSessions.SessionDestroy(w, r)
-		return
+		e := NewUnauthorizedError("invalid username or password ")
+		errJsonReturn(w, r, e)
 	}
 
 	username, ok := strI.(string)
@@ -162,8 +192,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "")
 }
 
-//router.Handler(websocket.Handler(GetSystemInfo)
-//这里返回有所有的系统相关数据？
+//返回系统信息
 func GetSysInfo(ws *websocket.Conn) {
 	for {
 		sysinfo, err := globalClient.GetSysInfo()
@@ -185,10 +214,41 @@ func GetSysInfo(ws *websocket.Conn) {
 
 }
 
+func GetUserStatus(ws *websocket.Conn) {
+	for {
+		/*使用channel来控制更新频率*/
+		/*新增或者移除用户时,发送channel,触发websocket写入*/
+		/*新增或移除镜像时,发送channel,触发websocket写入*/
+		/*新增或者移除namespace时,发送channel,触发websocket写入*/
+		/*只有以上动作触发时才会触发更新前端数据*/
+		/*
+			go func() {
+				select {
+				case <-UserChannel: //获取image数据,更新
+				case <-ImageChannel: client.GetUserStatus()
+				case <-NamespaceChannel: client.GetUserStaus
+				}
+			}()
+			userStatus := <-UserStatusChannel
+			b, err := json.Marshal(userStatus)
+			if err != nil {
+				panic(err)
+			}
+
+			if err = websocket.Message.Send(ws, string(b)); err != nil {
+				panic(err)
+			}*/
+		//暂时不用channel
+		//使用轮询,10s一次查询
+	}
+
+}
+
 type LogStruct struct {
 	Log string `json:"log"`
 }
 
+//需要修改
 func GetLog(ws *websocket.Conn) {
 	for {
 		infos := <-log.LogChannel
@@ -206,6 +266,18 @@ func GetLog(ws *websocket.Conn) {
 	}
 }
 
+func DeleteImage(w http.ResponseWriter, r *http.Request) {
+	user, err := getRequestUser(w, r)
+	if err != nil {
+		e := NewUnauthorizedError("user doesn't login")
+		errJsonReturn(w, r, e)
+	}
+	log.Debug(user + "delete images")
+
+	/*提取镜像名,Tag*/
+	/*获取锁,删除*/
+}
+
 func Test(w http.ResponseWriter, r *http.Request) {
 	/*	images, err := globalClient.ListImages()
 
@@ -218,15 +290,6 @@ func Test(w http.ResponseWriter, r *http.Request) {
 	log.Logger.Debug(sess.Get("username").(string)) //打印当前登录用户的用户名
 
 }
-
-/*
-func ShowLogin(w http.ResponseWriter, r *http.Request) {
-	sess := globalSessions.SessionStart(w, r)
-	t, _ := template.ParseFiles(loginPage)
-	w.Header().Set("Content-Type", "text/html")
-	t.Execute(w, sess.Get("username"))
-
-}*/
 
 func init() {
 	var err error

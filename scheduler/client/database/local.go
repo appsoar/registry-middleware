@@ -9,8 +9,8 @@ type LocalClient struct {
 }
 
 func init() {
-	localclient := &LocalClient{}
-	RegisterDatabaseClient("local", localclient)
+	//localclient := &LocalClient{}
+	//RegisterDatabaseClient("local", localclient)
 
 }
 

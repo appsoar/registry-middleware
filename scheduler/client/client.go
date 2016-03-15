@@ -1,32 +1,22 @@
 package client
 
 import (
-	//	"fmt"
 	"scheduler/client/database"
 	"scheduler/client/registry"
 	"scheduler/client/sysinfo"
 	"scheduler/log"
 )
 
-/*
-type ClientOpts struct {
-	Url       string
-	AccessKey string
-	SecretKey string
-}
-
-type BaseClient struct {
-	Opts *ClientOpts
-}
-*/
+//UserChannel chan int
+//ImageChannel chan int
+//NamespaceChannel chan int
 
 //所有访问的总接口
-//
+//在每个subClient实现lock
 type Client struct {
 	database database.DatabaseClient
 	registry registry.RegistryClient
 	sysInfo  sysinfo.SysInfoClient
-	//  lock - 数据同步时使用?还是在subClient中实现?
 }
 
 func constructClient() *Client {
@@ -40,7 +30,7 @@ func constructClient() *Client {
 
 	client.sysInfo, err = sysinfo.GetSysInfoClient()
 	if err != nil {
-		//		panic(err)
+		panic(err)
 	}
 
 	client.registry, err = registry.GetRegistryClient()
@@ -48,14 +38,11 @@ func constructClient() *Client {
 		panic(err)
 	}
 
-	//client.Registry = newRegistryClient(client)
-
 	return client
 }
 
 func NewClient() (*Client, error) {
 	client := constructClient()
-	//	client.BaseClient.Opts = opts
 	return client, nil
 }
 
@@ -69,8 +56,7 @@ type SysInfo struct {
 }
 
 func (c *Client) GetSysInfo() (SysInfo, error) {
-	//	cpuUsage,err := c.sysInfo.
-	//c.sysInfo.GetCpuUsage()
+
 	info := new(SysInfo)
 	var cpuchan = make(chan int)
 	var ramchan = []chan uint64{
@@ -175,6 +161,62 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 	err := c.registry.DeleteImageTag(image, tag)
 	return err
 }
+
+type UserStatus struct {
+	UserNums   int
+	ImageNums  int
+	Namespaces int
+}
+
+//触发式更新web镜像/用户/命名空间显示信息
+func (c *Client) AddUser() {
+	//	c.database.AddUser()
+	/*
+		go func() {
+			UserChannel <- 1
+		}()*/
+}
+
+func (c *Client) DelUser() {
+	//	c.database.DelUser()
+	/*
+		go func() {
+			UserChannel <- 1
+		}()*/
+}
+
+func (c *Client) AddNS() {
+	//	c.database.AddNamespace()
+	/*
+		go func() {
+			NamespaceChannel <- 1
+		}()*/
+}
+
+func (c *Client) DelNS() {
+	//	c.database.DelNamespace()
+	/*
+		go func() {
+			NamespaceChannel <- 1
+		}()*/
+}
+
+func (c *Client) DeleteImage() {
+	//	c.database.DelImageTag()
+	/*
+		go func() {
+			ImageChannel <- 1
+		}()*/
+}
+
+/*
+func (c *Client) GetUserStatus() {
+	us, err := c.ry.ag(image, tag)
+	if err != nil {
+		panic(err)
+	}
+	UserStatusChannel <- us
+}*/
 
 /*
 type Comment struct {
