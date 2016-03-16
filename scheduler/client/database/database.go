@@ -2,37 +2,75 @@ package database
 
 import (
 	"fmt"
-	//	"os"
-	//	 "scheduler/client/database/local"
+	"time"
 )
 
 var (
 	databaseClients map[string]DatabaseClient
 )
 
-type UserInfo struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+/*
+type UserStatInfo struct {
+	Content InfoContent `json:"content"`
+	Message string      `json:"message"`
+	Result  int         `json:"result"`
 }
 
-type Namespace struct {
-	Name  string     `json:"namespace"`
-	Users []UserInfo `json:"users"`
+type InfoContent struct {
+	NamespaceNum  int `json:"namespace"`
+	UserNum       int `json:"user"`
+	RepositoryNum int `json:"repository"`
 }
 
-type ImageInfo struct {
+type Respository struct {
+	Content RespositoryContent `json:"content"`
+	Message string             `json:"message"`
+	Result  int                `json:"result"`
+}
+
+type RespositoryContent struct {
+	PushTime  time.Time `json:"push_time"`
+	UserId    string    `json:"user_id"`
+	Namespace string    `json:"namespace"`
+	IsPublic  bool      `json:"is_public"`
+	Desc      string    `json:"desc"`
+	Id        string    `json:"_id"`
+	Delete    time.Time `json:"delete"`
+}
+
+type Account struct {
+	Content AccountContent `json:"content"`
+	Message string         `json:"message"`
+	Result  int            `json:"result"`
+}
+
+type AccountContent struct {
+	NickName string    `json:"nick_name"`
+	UserID   string    `json:"user_id"`
+	Avatar   string    `json:"avatar"` //头像
+	JoinTime time.Time `json:"join_time"`
+	Password string    `json:"password"`
+}
+*/
+type Message struct {
+	Content map[interface{}]interface{}
+	Message string
+	Result  int
 }
 
 type DatabaseClient interface {
-	GetUserInfo(string) (UserInfo, error)
-	AddUser(UserInfo) error
-	DelUser(UserInfo) error
-	GetNamespaceInfo() (Namespace, error)
-	AddNamespace(Namespace) error
-	DelNamespace(Namespace) error
+	GetUserStatInfo() (Message, error)
+	GetAccount(string) (Message, error)
+	//AddUser(UserInfo) error
+	//DelUser(UserInfo) error
+	//GetNamespaceInfo() (Namespace, error)
+	//AddNamespace(Namespace) error
+	//DelNamespace(Namespace) error
 
-	GetImageInfo(string) (ImageInfo, error)
-	DelImageTag(string) error
+	GetInfo(string) (Message, error)
+	//	DelImageTag(string) error
+
+	GetRes
 }
 
 /*
