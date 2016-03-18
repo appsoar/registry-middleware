@@ -2,7 +2,8 @@ package database
 
 import (
 	"fmt"
-	"time"
+	//	"time"
+	"encoding/json"
 )
 
 var (
@@ -52,44 +53,36 @@ type AccountContent struct {
 	Password string    `json:"password"`
 }
 */
-type Message struct {
-	Content map[interface{}]interface{}
+type Response struct {
+	Content json.RawMessage
 	Message string
 	Result  int
 }
 
 type DatabaseClient interface {
-	GetUserStatInfo() (Message, error)
-	GetAccount(string) (Message, error)
-	//AddUser(UserInfo) error
-	//DelUser(UserInfo) error
-	//GetNamespaceInfo() (Namespace, error)
-	//AddNamespace(Namespace) error
-	//DelNamespace(Namespace) error
+	GetInfo() (Response, error)
 
-	GetInfo(string) (Message, error)
-	//	DelImageTag(string) error
+	GetRepos() (Response, error)
+	ListRepoTags(string, string) (Response, error)
+	GetUserRepos(string) (Response, error)
+	GetNsRepos(string) (Response, error)
 
-	GetRes
+	GetAccounts() (Response, error)
+	GetUserAccount(string) (Response, error)
+	GetTagImage(string, string, string) (Response, error)
+	GetNamespaces() (Response, error)
+	GetSpecificNamespace(ns string) (Response, error)
+
+	//
+	AddNamespace(string) (Response, error)
+	ListNsUgroup(string, string) (Response, error)
+	AddNsUgroup(string, string) (Response, error)
+
+	ListAccounts() (Response, error)
+	//这里应该传入,从UI请求body中解析的user信息
+	AddAccount(string) (Response, error)
+	GetAccountInfo(string) (Response, error)
 }
-
-/*
-type DatabaseClient struct {
-	client *Client
-	BaseClient
-}
-
-func (c *DatabaseClient) GetUseInfo(username string) UserInfo {
-	//c.client.do****
-	return UserInfo{username: username, password: "12345"} //test
-}
-
-func newDatabaseClient() *DatabaseClient {
-	return &DatabaseClient{
-		client: client,
-	}
-}
-*/
 
 //注册数据库客户端
 func RegisterDatabaseClient(name string, client DatabaseClient) error {
@@ -113,7 +106,7 @@ func GetDatabaseClient() (DatabaseClient, error) {
 			return nil, fmt.Errorf("databaseClient not choose")
 		}
 	*/
-	name := "local"
+	name := "remote"
 
 	if client, ok := databaseClients[name]; ok {
 		return client, nil

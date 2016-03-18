@@ -1,9 +1,13 @@
 package client
 
 import (
+	"errors"
 	"scheduler/client/database"
 	"scheduler/client/registry"
 	"scheduler/client/sysinfo"
+
+	"encoding/json"
+	//	"fmt"
 	"scheduler/log"
 )
 
@@ -25,7 +29,7 @@ func constructClient() *Client {
 
 	client.database, err = database.GetDatabaseClient()
 	if err != nil {
-		//		panic(err)
+		panic(err)
 	}
 
 	client.sysInfo, err = sysinfo.GetSysInfoClient()
@@ -162,86 +166,259 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 	return err
 }
 
-type UserStatus struct {
-	UserNums   int
-	ImageNums  int
-	Namespaces int
+type UserStats struct {
+	User       int `json:"user"`
+	repository int `json:"repository"`
+	Namespace  int `json:"namespace"`
 }
 
-//触发式更新web镜像/用户/命名空间显示信息
-func (c *Client) AddUser() {
-	//	c.database.AddUser()
-	/*
-		go func() {
-			UserChannel <- 1
-		}()*/
-}
+func (c *Client) GetUserStats() (us UserStats, err error) {
+	var resp database.Response
 
-func (c *Client) DelUser() {
-	//	c.database.DelUser()
-	/*
-		go func() {
-			UserChannel <- 1
-		}()*/
-}
+	resp, err = c.database.GetInfo()
+	if err != nil {
+		return
+	}
 
-func (c *Client) AddNS() {
-	//	c.database.AddNamespace()
-	/*
-		go func() {
-			NamespaceChannel <- 1
-		}()*/
-}
-
-func (c *Client) DelNS() {
-	//	c.database.DelNamespace()
-	/*
-		go func() {
-			NamespaceChannel <- 1
-		}()*/
-}
-
-func (c *Client) DeleteImage() {
-	//	c.database.DelImageTag()
-	/*
-		go func() {
-			ImageChannel <- 1
-		}()*/
-}
-
-/*
-func (c *Client) GetUserStatus() {
-	us, err := c.ry.ag(image, tag)
+	err = json.Unmarshal(resp.Content, &us)
 	if err != nil {
 		panic(err)
 	}
-	UserStatusChannel <- us
-}*/
+
+	return
+
+}
+
+type UserInfo struct {
+	Id       string  `json:"_id"`
+	Password string  `json:"password"`
+	NickName string  `json:"nick_name"`
+	Avatar   string  `json:"avatar"`
+	JoinTime float64 `json:"join_time"`
+}
+
+func (c *Client) GetUserAccount(user string) (ui UserInfo, err error) {
+
+	if len(user) == 0 {
+		log.Logger.Error("invalid argument...")
+		panic("invalid argument..")
+	}
+	log.Logger.Debug("get uesr account")
+	resp, err := c.database.GetUserAccount(user)
+	if err != nil {
+		return
+	}
+	if resp.Result != 0 {
+		err = errors.New(resp.Message)
+		return
+	}
+
+	//userinfo, ok := resp.Content.(UserInfo)
+	err = json.Unmarshal(resp.Content, &ui)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+//存在问题
+func (c *Client) AddUserAccount(user string) (repoJson []byte, err error) {
+
+	if len(user) == 0 {
+		log.Logger.Error("invalid argument...")
+		panic("invalid argument..")
+	}
+	log.Logger.Debug("add uesr account")
+	resp, err := c.database.GetUserAccount(user)
+	if err != nil {
+		return
+	}
+	if resp.Result != 0 {
+		err = errors.New(resp.Message)
+		return
+	}
+	repoJson = resp.Content
+	//userinfo, ok := resp.Content.(UserInfo)
+	//	err = json.Unmarshal(resp.Content, &ui)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	return
+}
+
+type Repository struct {
+	Id         string  `json:"_id"`
+	Namespace  string  `json:"namespace"`
+	User       string  `json:"user_id"`
+	PushTime   float64 `json:"push_time"`
+	Desc       string  `json:"desc"`
+	Public     bool    `json:"is_public"`
+	DeleteTime float64 `json:"delete"`
+}
+
+func (c *Client) GetRepositories() (respJson []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.GetRepos()
+	if err != nil {
+		return
+	}
+	respJson = resp.Content
+	log.Logger.Debug(string(resp.Content))
+	return
+}
+
+func (c *Client) GetRepositoriesDecoded() (repo []Repository, err error) {
+	var resp database.Response
+	resp, err = c.database.GetRepos()
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(resp.Content, &repo)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+func (c *Client) ListRepoTags(usernameOrNamespace string, repoName string) (repoJson []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.ListRepoTags(usernameOrNamespace, repoName)
+	if err != nil {
+		return
+	}
+
+	repoJson = resp.Content
+	return
+}
+
+func (c *Client) GetNsRepos(ns string) (repoJson []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.GetNsRepos(ns)
+	if err != nil {
+		return
+	}
+
+	repoJson = resp.Content
+	return
+
+}
+
+func (c *Client) GetUserRepos(user string) (repoJson []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.GetUserRepos(user)
+	if err != nil {
+		return
+	}
+
+	repoJson = resp.Content
+	return
+}
+
+//func (c *Client) GetTagInfo(repo string,)
 
 /*
-type Comment struct {
-	Time    string `json:"time"`
-	User    string `json:"user"`
-	Content string `json:"content"`
+	'_id':1,
+	'user_id':'admin'
+	'repository':'ubuntu',
+	'tag_name':'1.0',
+	'size':54345345,
+	"digest": "sha256:fea8895f450959fa676bcc1df0611ea93823a735a01205fd8622846041d0c7cf",
+	'create_time': 13423423423,
+	'delete':0,    // 0表示未删除，其他值表示已删除
+	'pull_num':0,  // 问题：怎么计数
+
+*/
+type TagInfo struct {
+	Id          int    `json:"_id"`
+	UserID      string `json:"user_id"`
+	Respository string `json:"repository"`
+	TagName     string `json:"tag_name"`
+	Size        int    `json:"size"`
+	Digest      string `json:"digest"`
+	CreateTime  int    `json:"create_time"`
+	Delete      int    `json:"delete"`
+	PullNum     int    `json:"pull_num"`
 }
 
-type ImageProperty struct {
-	Name        string    `json:"name"`
-	Public      bool      `json:"public"`
-	Namespace   string    `json:"namespace"`
-	Tags        []string  `json:"tags"`
-	Download    uint      `json:"download"`
-	Description string    `json:"description"`
-	Comments    []Comment `json:"comments"`
+func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string, tagName string) (tag TagInfo, err error) {
+	var resp database.Response
+	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(resp.Content, &tag)
+	if err != nil {
+		panic(err)
+	}
+	return
 }
 
-func (c *Client) GetImageProperty(image string) ImageProperty {
-	return nil
+func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagName string) (repoJson []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+	if err != nil {
+		return
+	}
+	repoJson = resp.Content
+	return
 }
 
-func (c *Client) SetImagePublic(Public bool) {
-	return true
+//	GetTagImage(string, string, string) (Response, error)
+type Namespace struct {
+	Id         string  `json:"_id"`
+	OwnerId    string  `json:"_id"`
+	Desc       string  `json:"desc"`
+	Permission string  `json:"public"`
+	CreateTime float64 `json:"create_time"`
 }
 
-func (c *Client) SearchImage(image string) ImageProperty {
-}*/
+func (c *Client) GetNamespacesDecoded() (ns []Namespace, err error) {
+	var resp database.Response
+	resp, err = c.database.GetNamespaces()
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(resp.Content, &ns)
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
+func (c *Client) GetNamespaces() (jsonMsg []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.GetNamespaces()
+	if err != nil {
+		return
+	}
+
+	jsonMsg = resp.Content
+	log.Logger.Debug(string(resp.Content))
+	//	err = json.Unmarshal(resp.Content, &ns)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	return
+}
+
+func (c *Client) GetSpecificNamespace(ns string) (jsonMsg []byte, err error) {
+	var resp database.Response
+	if len(ns) == 0 {
+		panic("invalid ns")
+	}
+	resp, err = c.database.GetSpecificNamespace(ns)
+	if err != nil {
+		return
+	}
+
+	jsonMsg = resp.Content
+	log.Logger.Debug(string(resp.Content))
+	//	err = json.Unmarshal(resp.Content, &ns)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	return
+}
