@@ -10,6 +10,14 @@ var (
 	databaseClients map[string]DatabaseClient
 )
 
+type UserInfo struct {
+	Id       string  `json:"_id"`
+	Password string  `json:"password"`
+	NickName string  `json:"nick_name"`
+	Avatar   string  `json:"avatar"`
+	JoinTime float64 `json:"join_time"`
+}
+
 /*
 type UserStatInfo struct {
 	Content InfoContent `json:"content"`
@@ -67,8 +75,8 @@ type DatabaseClient interface {
 	GetUserRepos(string) (Response, error)
 	GetNsRepos(string) (Response, error)
 
-	GetAccounts() (Response, error)
-	GetUserAccount(string) (Response, error)
+	//GetAccounts() (Response, error)
+	//GetUserAccount(string) (Response, error)
 	GetTagImage(string, string, string) (Response, error)
 	GetNamespaces() (Response, error)
 	GetSpecificNamespace(ns string) (Response, error)
@@ -80,7 +88,7 @@ type DatabaseClient interface {
 
 	ListAccounts() (Response, error)
 	//这里应该传入,从UI请求body中解析的user信息
-	AddAccount(string) (Response, error)
+	AddUserAccount(UserInfo) (Response, error)
 	GetAccountInfo(string) (Response, error)
 }
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"scheduler/client/common"
-	"scheduler/log"
+	//"scheduler/log"
 	"sync"
 )
 
@@ -38,65 +38,6 @@ func (c *RemoteClient) GetInfo() (Response, error) {
 	rp := Response{}
 
 	resp, err := c.client.DoAction("/api/info", common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
-}
-
-func (c *RemoteClient) GetUserAccount(user string) (Response, error) {
-
-	if len(user) == 0 {
-		panic("invalid argument")
-	}
-	log.Logger.Debug("get user account:" + user)
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/account/"+user, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
-}
-
-func (c *RemoteClient) GetAccounts() (Response, error) {
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/accounts", common.Get)
 	if err != nil {
 		return rp, err
 	}
@@ -487,8 +428,8 @@ func (c *RemoteClient) ListAccounts() (Response, error) {
 	return rp, nil
 }
 
-func (c *RemoteClient) AddAccount(user string) (Response, error) {
-	if len(user) == 0 {
+func (c *RemoteClient) AddUserAccount(user UserInfo) (Response, error) {
+	if len(user.Id) == 0 || len(user.Password) == 0 {
 		panic("invalid arguments")
 	}
 
@@ -496,7 +437,13 @@ func (c *RemoteClient) AddAccount(user string) (Response, error) {
 	defer c.m.Unlock()
 
 	var rp Response
-	resp, err := c.client.DoAction("/api/account/"+user, common.Post)
+
+	byteData, err := json.Marshal(user)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := c.client.DoPost("/api/account", byteData)
 	if err != nil {
 		return rp, err
 	}

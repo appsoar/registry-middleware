@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/websocket"
 	"io/ioutil"
@@ -89,7 +88,6 @@ type LoginInfo struct {
 /*这里存在一个问题:当不通过UI,而通过客户端连接,用户输入的是不经过、
   mk5加密过的明文密码.会无法通过密码验证.
 */
-
 func login(w http.ResponseWriter, r *http.Request) (err error) {
 
 	var info LoginInfo
@@ -246,205 +244,6 @@ func GetLog(ws *websocket.Conn) {
 	}
 }
 
-func DeleteImage(w http.ResponseWriter, r *http.Request) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-	log.Debug(user + "delete images")
-
-	/*提取镜像名,Tag*/
-	/*获取锁,删除*/
-}
-func namespacesGet(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	log.Logger.Info(user + "get namespace info")
-	nsJson, err := globalClient.GetNamespaces()
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func namespaceGetSpecific(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	vars := mux.Vars(r)
-	ns := vars["namespace"]
-	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
-		return
-	}
-
-	log.Logger.Info(user + " get " + ns + " namespace info")
-
-	nsJson, err := globalClient.GetSpecificNamespace(ns)
-	_, err = globalClient.GetSpecificNamespace(ns)
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func getRepos(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	log.Logger.Info(user + " get repositories")
-
-	nsJson, err := globalClient.GetRepositories()
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func getNsRepos(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	log.Logger.Info(user + " get repositories")
-
-	vars := mux.Vars(r)
-	ns := vars["namespace"]
-
-	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
-		return
-	}
-
-	nsJson, err := globalClient.GetNsRepos(ns)
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func getUserRepos(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	log.Logger.Info(user + " get repositories")
-
-	vars := mux.Vars(r)
-	ns := vars["user"]
-
-	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
-		return
-	}
-
-	nsJson, err := globalClient.GetUserRepos(ns)
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	log.Logger.Info(user + " get repositories")
-
-	vars := mux.Vars(r)
-	name := vars["usernameOrNamespace"]
-	repoName := vars["repoName"]
-
-	if len(repoName) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
-		return
-	}
-
-	nsJson, err := globalClient.ListRepoTags(name, repoName)
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get repo info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
-	user, err := getRequestUser(w, r)
-	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
-		return
-	}
-
-	log.Logger.Info(user + " get repositories")
-
-	vars := mux.Vars(r)
-	name := vars["usernameOrNamespace"]
-	repoName := vars["repoName"]
-	tagName := vars["tagName"]
-
-	if len(repoName) == 0 || len(tagName) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
-		return
-	}
-
-	nsJson, err := globalClient.GetTagImage(name, repoName, tagName)
-	if err != nil {
-		err = errjson.NewInternalServerError("can't get repo info")
-		return
-	}
-	fmt.Fprintf(w, string(nsJson))
-	return
-}
-
-func test(w http.ResponseWriter, r *http.Request) error {
-	ui, err := globalClient.GetUserAccount("admin")
-	if err != nil {
-		log.Logger.Error(err.Error())
-		return err
-	}
-
-	fmt.Println(ui)
-	return nil
-
-}
-
 /*为了解决请求返回信息冗余的问题,合并http请求控制器最后路径为errJsonReturn或jsonReturn
 参考go web编程错误处理章节.由于集成了gorilla/mux,限制控制器类型为http.HandlerFunc
 因此使用此方法.下一步,尝试更改gorilla/mux代码?*/
@@ -460,15 +259,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err := logout(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
-}
-
-func TestHandler(w http.ResponseWriter, r *http.Request) {
-	if err := test(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}
@@ -537,6 +327,15 @@ func ListRepoTagsHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetTagImageHandler(w http.ResponseWriter, r *http.Request) {
 	if err := getTagImage(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func GetAccounts(w http.ResponseWriter, r *http.Request) {
+	if err := getAccounts(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}

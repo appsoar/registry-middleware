@@ -22,6 +22,7 @@ func NewRouter() *mux.Router {
 
 	routes = append(routes, nsRoutes...)
 	routes = append(routes, repoRoutes...)
+	routes = append(routes, accountRoutes...)
 
 	for _, route := range routes {
 		router.

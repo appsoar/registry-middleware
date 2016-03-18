@@ -184,30 +184,45 @@ func (c *Client) GetUserStats() (us UserStats, err error) {
 	if err != nil {
 		panic(err)
 	}
-
 	return
-
 }
 
+/*
 type UserInfo struct {
 	Id       string  `json:"_id"`
 	Password string  `json:"password"`
 	NickName string  `json:"nick_name"`
 	Avatar   string  `json:"avatar"`
 	JoinTime float64 `json:"join_time"`
+}*/
+
+func (c *Client) GetAccounts() (respJson []byte, err error) {
+
+	resp, err := c.database.ListAccounts()
+	if err != nil {
+		return
+	}
+	if resp.Result != 0 {
+		err = errors.New(resp.Message)
+		return
+	}
+	respJson = resp.Content
+	return
 }
 
-func (c *Client) GetUserAccount(user string) (ui UserInfo, err error) {
+func (c *Client) GetUserAccount(user string) (ui database.UserInfo, err error) {
 
 	if len(user) == 0 {
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
 	log.Logger.Debug("get uesr account")
-	resp, err := c.database.GetUserAccount(user)
+	resp, err := c.database.GetAccountInfo(user)
 	if err != nil {
+		log.Logger.Debug("GetAccountInfo fail")
 		return
 	}
+	log.Logger.Debug("%v\n", resp)
 	if resp.Result != 0 {
 		err = errors.New(resp.Message)
 		return
@@ -222,14 +237,14 @@ func (c *Client) GetUserAccount(user string) (ui UserInfo, err error) {
 }
 
 //存在问题
-func (c *Client) AddUserAccount(user string) (repoJson []byte, err error) {
+func (c *Client) AddUserAccount(user database.UserInfo) (repoJson []byte, err error) {
 
-	if len(user) == 0 {
+	if len(user.Id) == 0 {
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
 	log.Logger.Debug("add uesr account")
-	resp, err := c.database.GetUserAccount(user)
+	resp, err := c.database.AddUserAccount(user)
 	if err != nil {
 		return
 	}
@@ -238,11 +253,6 @@ func (c *Client) AddUserAccount(user string) (repoJson []byte, err error) {
 		return
 	}
 	repoJson = resp.Content
-	//userinfo, ok := resp.Content.(UserInfo)
-	//	err = json.Unmarshal(resp.Content, &ui)
-	//	if err != nil {
-	//		panic(err)
-	//	}
 	return
 }
 
@@ -315,20 +325,6 @@ func (c *Client) GetUserRepos(user string) (repoJson []byte, err error) {
 	return
 }
 
-//func (c *Client) GetTagInfo(repo string,)
-
-/*
-	'_id':1,
-	'user_id':'admin'
-	'repository':'ubuntu',
-	'tag_name':'1.0',
-	'size':54345345,
-	"digest": "sha256:fea8895f450959fa676bcc1df0611ea93823a735a01205fd8622846041d0c7cf",
-	'create_time': 13423423423,
-	'delete':0,    // 0表示未删除，其他值表示已删除
-	'pull_num':0,  // 问题：怎么计数
-
-*/
 type TagInfo struct {
 	Id          int    `json:"_id"`
 	UserID      string `json:"user_id"`
@@ -365,7 +361,6 @@ func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagNam
 	return
 }
 
-//	GetTagImage(string, string, string) (Response, error)
 type Namespace struct {
 	Id         string  `json:"_id"`
 	OwnerId    string  `json:"_id"`
@@ -397,10 +392,6 @@ func (c *Client) GetNamespaces() (jsonMsg []byte, err error) {
 
 	jsonMsg = resp.Content
 	log.Logger.Debug(string(resp.Content))
-	//	err = json.Unmarshal(resp.Content, &ns)
-	//	if err != nil {
-	//		panic(err)
-	//	}
 	return
 }
 
@@ -416,9 +407,5 @@ func (c *Client) GetSpecificNamespace(ns string) (jsonMsg []byte, err error) {
 
 	jsonMsg = resp.Content
 	log.Logger.Debug(string(resp.Content))
-	//	err = json.Unmarshal(resp.Content, &ns)
-	//	if err != nil {
-	//		panic(err)
-	//	}
 	return
 }

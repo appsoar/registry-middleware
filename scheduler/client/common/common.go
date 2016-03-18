@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bytes"
 	"net/http"
 	"time"
 )
@@ -40,6 +41,26 @@ func (c BaseClient) DoAction(path string, op Op) (resp *http.Response, err error
 	client := &http.Client{Timeout: Timeout}
 
 	req, err := http.NewRequest(op.Name, c.Opts.Url+path, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	req.SetBasicAuth(c.Opts.AccessKey, c.Opts.SecretKey)
+	resp, err = client.Do(req)
+	return
+
+}
+
+func (c BaseClient) DoPost(path string, data []byte) (resp *http.Response, err error) {
+	body := bytes.NewReader(data)
+
+	Timeout := c.Opts.Timeout
+	if Timeout == 0 {
+		Timeout = DefaultTimeOut
+	}
+	client := &http.Client{Timeout: Timeout}
+
+	req, err := http.NewRequest("POST", c.Opts.Url+path, body)
 	if err != nil {
 		panic(err.Error())
 	}
