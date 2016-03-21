@@ -13,6 +13,12 @@ type RemoteClient struct {
 	m      *sync.RWMutex
 }
 
+type response struct {
+	Content json.RawMessage
+	Message string
+	Result  int
+}
+
 func init() {
 	/*
 		Url := os.Getenv("DBURL")
@@ -51,16 +57,16 @@ func init() {
 
 }
 
-func (c *RemoteClient) doGet(url string) (Response, error) {
+func (c *RemoteClient) doGet(url string) (content json.RawMessage, err error) {
 
 	c.m.RLock()
 	defer c.m.RUnlock()
-	rp := Response{}
+	rp := response{}
 
 	resp, err := c.client.DoAction(url, common.Get)
 	if err != nil {
-		log.Logger.Error()
-		return rp, err
+		log.Logger.Error(err.Error())
+		return
 	}
 	defer func() {
 		if resp != nil {
@@ -70,28 +76,34 @@ func (c *RemoteClient) doGet(url string) (Response, error) {
 
 	byteContent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return rp, err
+		return
 	}
 
 	err = json.Unmarshal(byteContent, &rp)
 	if err != nil {
-		return rp, err
+		return
 	}
-	return rp, nil
+
+	if rp.Result != 0 {
+		err = EDatabase{Code: rp.Result, Msg: rp.Message}
+		return
+	}
+	content = rp.Content
+	return
 }
 
-func (c *RemoteClient) doPost(url string, byteData []byte) (Response, error) {
+func (c *RemoteClient) doPost(url string, byteData []byte) (content json.RawMessage, err error) {
 
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	var rp Response
+	var rp response
 
 	log.Logger.Debug("request body:" + string(byteData))
 	resp, err := c.client.DoPost(url, byteData)
 	if err != nil {
 		log.Logger.Error(err.Error())
-		return rp, err
+		return
 	}
 	defer func() {
 		if resp != nil {
@@ -102,33 +114,38 @@ func (c *RemoteClient) doPost(url string, byteData []byte) (Response, error) {
 	byteContent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Logger.Error("ioutil Read All fail")
-		return rp, err
+		return
 	}
 
 	err = json.Unmarshal(byteContent, &rp)
 	if err != nil {
 		log.Logger.Error("json decoded fail")
-		return rp, err
+		return
 	}
 
-	return rp, nil
+	if rp.Result != 0 {
+		err = EDatabase{Code: rp.Result, Msg: rp.Message}
+		return
+	}
+	content = rp.Content
+	return
 }
 
-func (c *RemoteClient) GetInfo() (Response, error) {
+func (c *RemoteClient) GetInfo() (json.RawMessage, error) {
 
 	url := "/api/info"
 	rp, err := c.doGet(url)
 	return rp, err
 }
 
-func (c *RemoteClient) GetRepos() (Response, error) {
+func (c *RemoteClient) GetRepos() (json.RawMessage, error) {
 	url := "/api/repositories"
 	rp, err := c.doGet(url)
 	return rp, err
 
 }
 
-func (c *RemoteClient) ListRepoTags(name string, repo string) (Response, error) {
+func (c *RemoteClient) ListRepoTags(name string, repo string) (json.RawMessage, error) {
 
 	if len(repo) == 0 {
 		panic("invalid argment")
@@ -146,7 +163,7 @@ func (c *RemoteClient) ListRepoTags(name string, repo string) (Response, error) 
 
 }
 
-func (c *RemoteClient) GetUserRepos(user string) (Response, error) {
+func (c *RemoteClient) GetUserRepos(user string) (json.RawMessage, error) {
 
 	if len(user) == 0 {
 		panic("invalid argment")
@@ -157,7 +174,7 @@ func (c *RemoteClient) GetUserRepos(user string) (Response, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetNsRepos(ns string) (Response, error) {
+func (c *RemoteClient) GetNsRepos(ns string) (json.RawMessage, error) {
 
 	if len(ns) == 0 {
 		panic("invalid argment")
@@ -168,7 +185,7 @@ func (c *RemoteClient) GetNsRepos(ns string) (Response, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (Response, error) {
+func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (json.RawMessage, error) {
 
 	if len(repo) == 0 || len(tag) == 0 {
 		panic("invalid arguments")
@@ -185,14 +202,14 @@ func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (Respon
 	return rp, err
 }
 
-func (c *RemoteClient) GetNamespaces() (Response, error) {
+func (c *RemoteClient) GetNamespaces() (json.RawMessage, error) {
 
 	url := "/api/namespaces"
 	rp, err := c.doGet(url)
 	return rp, err
 }
 
-func (c *RemoteClient) GetSpecificNamespace(ns string) (Response, error) {
+func (c *RemoteClient) GetSpecificNamespace(ns string) (json.RawMessage, error) {
 	if len(ns) == 0 {
 		panic("invalid arguments")
 	}
@@ -202,7 +219,7 @@ func (c *RemoteClient) GetSpecificNamespace(ns string) (Response, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) AddNamespace(ns Namespace) (Response, error) {
+func (c *RemoteClient) AddNamespace(ns Namespace) (json.RawMessage, error) {
 	if len(ns.Id) == 0 {
 		panic("invalid arguments")
 	}
@@ -217,7 +234,7 @@ func (c *RemoteClient) AddNamespace(ns Namespace) (Response, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetNsUgroup(ns string) (Response, error) {
+func (c *RemoteClient) GetNsUgroup(ns string) (json.RawMessage, error) {
 	if len(ns) == 0 {
 		panic("invalid arguments")
 	}
@@ -227,7 +244,7 @@ func (c *RemoteClient) GetNsUgroup(ns string) (Response, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) AddUgroup(ug UserGroup) (Response, error) {
+func (c *RemoteClient) AddUgroup(ug UserGroup) (json.RawMessage, error) {
 	if len(ug.GroupName) == 0 {
 		panic("invalid argument")
 	}
@@ -242,14 +259,14 @@ func (c *RemoteClient) AddUgroup(ug UserGroup) (Response, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) ListAccounts() (Response, error) {
+func (c *RemoteClient) ListAccounts() (json.RawMessage, error) {
 
 	url := "/api/accounts"
 	rp, err := c.doGet(url)
 	return rp, err
 }
 
-func (c *RemoteClient) AddUserAccount(user UserInfo) (Response, error) {
+func (c *RemoteClient) AddUserAccount(user UserInfo) (json.RawMessage, error) {
 	if len(user.Id) == 0 || len(user.Password) == 0 {
 		log.Logger.Error("User Account have empty Id or Password")
 		panic("invalid arguments")
@@ -268,7 +285,7 @@ func (c *RemoteClient) AddUserAccount(user UserInfo) (Response, error) {
 
 }
 
-func (c *RemoteClient) GetAccountInfo(user string) (Response, error) {
+func (c *RemoteClient) GetAccountInfo(user string) (json.RawMessage, error) {
 	if len(user) == 0 {
 		panic("invalid argument")
 	}

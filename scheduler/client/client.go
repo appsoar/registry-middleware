@@ -177,32 +177,43 @@ type UserStats struct {
 }
 
 func (c *Client) GetUserStats() (us UserStats, err error) {
-	var resp database.Response
+	var resp json.RawMessage
 
 	resp, err = c.database.GetInfo()
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp.Content, &us)
+	err = json.Unmarshal(resp, &us)
 	if err != nil {
 		panic(err)
 	}
 	return
 }
 
-func (c *Client) GetAccounts() (respJson []byte, err error) {
+func (c *Client) GetAccounts() (resp []byte, err error) {
 
-	resp, err := c.database.ListAccounts()
-	if err != nil {
-		return
-	}
-	if resp.Result != 0 {
-		err = errors.New(resp.Message)
-		return
-	}
-	respJson = resp.Content
+	resp, err = c.database.ListAccounts()
 	return
+	/*
+		if e, ok := err.(database.Edatabase); ok {
+			switch e.Code {
+			case database.EPermission,
+				database.EnoRecord,
+				database.EMissingId,
+				database.EInvalidFilter,
+				database.EParameter,
+				database.EIncompleteUserInfo,
+				database.EUserExists,
+				database.EIncompleteUserInfo,
+				database.EGroupExits,
+				database.EInvalidNsInfo,
+				database.NsExists:
+					errJson.
+
+			}
+		}
+	*/
 }
 
 /*解析后的用户账号信息*/
@@ -218,59 +229,30 @@ func (c *Client) GetUserAccountDecoded(user string) (ui database.UserInfo, err e
 		log.Logger.Debug("GetAccount Info fail")
 		return
 	}
-	log.Logger.Debug("resp content:%v\n", string(resp.Content))
-	if resp.Result != 0 {
-		err = errors.New(resp.Message)
-		return
-	}
-
 	//userinfo, ok := resp.Content.(UserInfo)
-	err = json.Unmarshal(resp.Content, &ui)
-	if err != nil {
-		panic(err)
-	}
+	err = json.Unmarshal(resp, &ui)
 	return
 }
 
-func (c *Client) GetUserAccount(user string) (respJson []byte, err error) {
+func (c *Client) GetUserAccount(user string) (resp []byte, err error) {
 
 	if len(user) == 0 {
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
 	log.Logger.Debug("get uesr account")
-	resp, err := c.database.GetAccountInfo(user)
-	if err != nil {
-		log.Logger.Debug("GetAccountInfo fail")
-		return
-	}
-	log.Logger.Debug("resp:%v\n", resp)
-	if resp.Result != 0 {
-		err = errors.New(resp.Message)
-		return
-	}
-	respJson = resp.Content
+	resp, err = c.database.GetAccountInfo(user)
 	return
 }
 
-func (c *Client) AddUserAccount(user database.UserInfo) (repoJson []byte, err error) {
+func (c *Client) AddUserAccount(user database.UserInfo) (resp []byte, err error) {
 
 	if len(user.Id) == 0 {
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
 	log.Logger.Debug("add uesr account")
-	resp, err := c.database.AddUserAccount(user)
-	if err != nil {
-		log.Logger.Error(err.Error())
-		return
-	}
-	if resp.Result != 0 {
-		log.Logger.Debug(resp.Message)
-		err = errors.New(resp.Message)
-		return
-	}
-	repoJson = resp.Content
+	resp, err = c.database.AddUserAccount(user)
 	return
 }
 
@@ -284,62 +266,39 @@ type Repository struct {
 	DeleteTime float64 `json:"delete"`
 }
 
-func (c *Client) GetRepositories() (respJson []byte, err error) {
-	var resp database.Response
+func (c *Client) GetRepositories() (resp []byte, err error) {
 	resp, err = c.database.GetRepos()
-	if err != nil {
-		return
-	}
-	respJson = resp.Content
-	log.Logger.Debug(string(resp.Content))
 	return
 }
 
 func (c *Client) GetRepositoriesDecoded() (repo []Repository, err error) {
-	var resp database.Response
+	var resp json.RawMessage
 	resp, err = c.database.GetRepos()
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp.Content, &repo)
+	err = json.Unmarshal(resp, &repo)
 	if err != nil {
-		panic(err)
+		err = errors.New("json parse fail")
 	}
 	return
 }
 
-func (c *Client) ListRepoTags(usernameOrNamespace string, repoName string) (repoJson []byte, err error) {
-	var resp database.Response
+func (c *Client) ListRepoTags(usernameOrNamespace string, repoName string) (resp []byte, err error) {
 	resp, err = c.database.ListRepoTags(usernameOrNamespace, repoName)
-	if err != nil {
-		return
-	}
 
-	repoJson = resp.Content
 	return
 }
 
-func (c *Client) GetNsRepos(ns string) (repoJson []byte, err error) {
-	var resp database.Response
+func (c *Client) GetNsRepos(ns string) (resp []byte, err error) {
 	resp, err = c.database.GetNsRepos(ns)
-	if err != nil {
-		return
-	}
-
-	repoJson = resp.Content
 	return
 
 }
 
-func (c *Client) GetUserRepos(user string) (repoJson []byte, err error) {
-	var resp database.Response
+func (c *Client) GetUserRepos(user string) (resp []byte, err error) {
 	resp, err = c.database.GetUserRepos(user)
-	if err != nil {
-		return
-	}
-
-	repoJson = resp.Content
 	return
 }
 
@@ -358,26 +317,21 @@ type TagInfo struct {
 }
 
 func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string, tagName string) (tag TagInfo, err error) {
-	var resp database.Response
+	var resp json.RawMessage
 	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp.Content, &tag)
+	err = json.Unmarshal(resp, &tag)
 	if err != nil {
 		panic(err)
 	}
 	return
 }
 
-func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagName string) (repoJson []byte, err error) {
-	var resp database.Response
+func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagName string) (resp []byte, err error) {
 	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
-	if err != nil {
-		return
-	}
-	repoJson = resp.Content
 	return
 }
 
@@ -392,79 +346,44 @@ type Namespace struct {
 }
 
 func (c *Client) GetNamespacesDecoded() (ns []Namespace, err error) {
-	var resp database.Response
+	var resp json.RawMessage
 	resp, err = c.database.GetNamespaces()
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp.Content, &ns)
+	err = json.Unmarshal(resp, &ns)
 	if err != nil {
 		panic(err)
 	}
 	return
 }
 
-func (c *Client) GetNamespaces() (jsonMsg []byte, err error) {
-	var resp database.Response
+func (c *Client) GetNamespaces() (resp []byte, err error) {
 	resp, err = c.database.GetNamespaces()
-	if err != nil {
-		return
-	}
-
-	jsonMsg = resp.Content
-	log.Logger.Debug(string(resp.Content))
 	return
 }
 
-func (c *Client) GetSpecificNamespace(ns string) (jsonMsg []byte, err error) {
-	var resp database.Response
+func (c *Client) GetSpecificNamespace(ns string) (resp []byte, err error) {
 	if len(ns) == 0 {
 		panic("invalid ns")
 	}
 	resp, err = c.database.GetSpecificNamespace(ns)
-	if err != nil {
-		return
-	}
-
-	jsonMsg = resp.Content
-	log.Logger.Debug(string(resp.Content))
 	return
 }
-func (c *Client) AddNamespace(ns database.Namespace) (jsonMsg []byte, err error) {
-	var resp database.Response
+func (c *Client) AddNamespace(ns database.Namespace) (resp []byte, err error) {
 	resp, err = c.database.AddNamespace(ns)
-	if err != nil {
-		return
-	}
-
-	jsonMsg = resp.Content
-	log.Logger.Debug(string(resp.Content))
 	return
 }
 
 /* ============== 用户组 ==================*/
 
-func (c *Client) GetNsUgroup(ns string) (jsonMsg []byte, err error) {
-	var resp database.Response
+func (c *Client) GetNsUgroup(ns string) (resp []byte, err error) {
 	resp, err = c.database.GetNsUgroup(ns)
-	if err != nil {
-		return
-	}
-
-	jsonMsg = resp.Content
-	log.Logger.Debug(string(resp.Content))
 	return
 }
 
-func (c *Client) AddUgroup(ug database.UserGroup) (jsonMsg []byte, err error) {
-	var resp database.Response
+func (c *Client) AddUgroup(ug database.UserGroup) (resp []byte, err error) {
 	resp, err = c.database.AddUgroup(ug)
-	if err != nil {
-		return
-	}
-
-	jsonMsg = resp.Content
-	log.Logger.Debug(string(resp.Content))
 	return
 }

@@ -9,6 +9,35 @@ var (
 	databaseClients map[string]DatabaseClient
 )
 
+//这里部分错误，应当做服务器内部错误返回
+//其余当做用户无效请求Forbidden
+const (
+	EPermission  = 10108 //用户权限不够
+	EDbException = 10501 //数据库异常
+	ENoRecord    = 10503 // 记录不存在
+	EMissingId   = 10509 //记录信息没有Id
+
+	EInvalidFilter = 10510 //过滤条件不合法
+	EParameter     = 11001 //参数错误
+	ENotInterface  = 11002 //没有实现对应的接口
+
+	EIncompleteUserInfo  = 12001 //用户信息不完整
+	EUserExists          = 12002 //用户已经存在
+	EIncompleteGroupInfo = 12003 //分组信息不完整
+	EGroupExists         = 12004 //分组已存在
+	EInvalidNsInfo       = 12005 //命名空间信息无效
+	ENsExists            = 12006 //命名空间已经存在
+)
+
+type EDatabase struct {
+	Code int
+	Msg  string
+}
+
+func (e EDatabase) Error() string {
+	return e.Msg
+}
+
 type UserInfo struct {
 	Id       string  `json:"_id"`
 	Password string  `json:"password"`
@@ -33,36 +62,30 @@ type Namespace struct {
 	CreateTime float64 `json:"create_time"`
 }
 
-type Response struct {
-	Content json.RawMessage
-	Message string
-	Result  int
-}
-
 type DatabaseClient interface {
 	/*user,namespace,repo statistic*/
-	GetInfo() (Response, error)
+	GetInfo() (json.RawMessage, error)
 
 	/*----repo*/
-	GetRepos() (Response, error)
-	ListRepoTags(string, string) (Response, error)
-	GetUserRepos(string) (Response, error)
-	GetNsRepos(string) (Response, error)
-	GetTagImage(string, string, string) (Response, error)
+	GetRepos() (json.RawMessage, error)
+	ListRepoTags(string, string) (json.RawMessage, error)
+	GetUserRepos(string) (json.RawMessage, error)
+	GetNsRepos(string) (json.RawMessage, error)
+	GetTagImage(string, string, string) (json.RawMessage, error)
 
 	/*----Namespace*/
-	GetNamespaces() (Response, error)
-	GetSpecificNamespace(ns string) (Response, error)
-	AddNamespace(Namespace) (Response, error)
+	GetNamespaces() (json.RawMessage, error)
+	GetSpecificNamespace(ns string) (json.RawMessage, error)
+	AddNamespace(Namespace) (json.RawMessage, error)
 
 	/*----UserGroup*/
-	GetNsUgroup(string) (Response, error)
-	AddUgroup(UserGroup) (Response, error)
+	GetNsUgroup(string) (json.RawMessage, error)
+	AddUgroup(UserGroup) (json.RawMessage, error)
 
 	/*----Accounts*/
-	ListAccounts() (Response, error)
-	AddUserAccount(UserInfo) (Response, error)
-	GetAccountInfo(string) (Response, error)
+	ListAccounts() (json.RawMessage, error)
+	AddUserAccount(UserInfo) (json.RawMessage, error)
+	GetAccountInfo(string) (json.RawMessage, error)
 }
 
 //注册数据库客户端
