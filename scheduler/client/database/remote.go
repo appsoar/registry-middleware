@@ -50,19 +50,13 @@ func init() {
 
 }
 
-/*
-func get(url string) (Response, error) {
-
-}*/
-
-func (c *RemoteClient) GetInfo() (Response, error) {
+func doGet(url string) (Response, error) {
 
 	c.m.RLock()
 	defer c.m.RUnlock()
-
 	rp := Response{}
 
-	resp, err := c.client.DoAction("/api/info", common.Get)
+	resp, err := c.client.DoAction(url, common.Get)
 	if err != nil {
 		return rp, err
 	}
@@ -84,12 +78,14 @@ func (c *RemoteClient) GetInfo() (Response, error) {
 	return rp, nil
 }
 
-func (c *RemoteClient) GetRepos() (Response, error) {
-	c.m.RLock()
-	defer c.m.RUnlock()
+func doPost(url string, byteData []byte) (Response, error) {
+
+	c.m.Lock()
+	defer c.m.Unlock()
 
 	var rp Response
-	resp, err := c.client.DoAction("/api/repositories", common.Get)
+
+	resp, err := c.client.DoPost(url, byteData)
 	if err != nil {
 		return rp, err
 	}
@@ -109,6 +105,19 @@ func (c *RemoteClient) GetRepos() (Response, error) {
 		return rp, err
 	}
 	return rp, nil
+}
+
+func (c *RemoteClient) GetInfo() (Response, error) {
+
+	url := "/api/info"
+	rp, err := doGet(url)
+	return rp, err
+}
+
+func (c *RemoteClient) GetRepos() (Response, error) {
+	url := "/api/repositories"
+	rp, err := doGet(url)
+	return rp, err
 
 }
 
@@ -118,38 +127,15 @@ func (c *RemoteClient) ListRepoTags(name string, repo string) (Response, error) 
 		panic("invalid argment")
 	}
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
 	var url string
-
 	if len(name) != 0 {
 		url = "/api/repository/" + repo
-
 	} else {
 		url = "/api/repository/" + name + "/" + repo
 	}
-	resp, err := c.client.DoAction(url, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
 
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	rp, err := doGet(url)
+	return rp, err
 
 }
 
@@ -159,30 +145,9 @@ func (c *RemoteClient) GetUserRepos(user string) (Response, error) {
 		panic("invalid argment")
 	}
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/repositories/user/"+user, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/repositories/user/" + user
+	rp, err := goGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) GetNsRepos(ns string) (Response, error) {
@@ -191,30 +156,9 @@ func (c *RemoteClient) GetNsRepos(ns string) (Response, error) {
 		panic("invalid argment")
 	}
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/repositories/"+ns, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/repositories/" + ns
+	rp, err := goGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (Response, error) {
@@ -223,64 +167,22 @@ func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (Respon
 		panic("invalid arguments")
 	}
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
 	var url string
 	if len(name) == 0 {
 		url = "/api/tag/" + name + "/" + repo + "/" + tag
 	} else {
 		url = "/api/tag/" + repo + "/" + tag
 	}
-	resp, err := c.client.DoAction(url, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
 
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	rp, err := doGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) GetNamespaces() (Response, error) {
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/namespaces", common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/namespaces"
+	rp, err := doGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) GetSpecificNamespace(ns string) (Response, error) {
@@ -288,30 +190,9 @@ func (c *RemoteClient) GetSpecificNamespace(ns string) (Response, error) {
 		panic("invalid arguments")
 	}
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/namespace/"+ns, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/namespace/" + ns
+	rp, err := doGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) AddNamespace(ns Namespace) (Response, error) {
@@ -319,36 +200,14 @@ func (c *RemoteClient) AddNamespace(ns Namespace) (Response, error) {
 		panic("invalid arguments")
 	}
 
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	var rp Response
-
 	byteData, err := json.Marshal(ns)
 	if err != nil {
 		panic(err)
 	}
 
-	resp, err := c.client.DoPost("/api/namespace", byteData)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/namespace"
+	rp, err := doPost(url, byteData)
+	return rp, err
 }
 
 func (c *RemoteClient) GetNsUgroup(ns string) (Response, error) {
@@ -356,30 +215,9 @@ func (c *RemoteClient) GetNsUgroup(ns string) (Response, error) {
 		panic("invalid arguments")
 	}
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/grp/"+ns, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/grp/" + ns
+	rp, err := doGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) AddUgroup(ug UserGroup) (Response, error) {
@@ -387,129 +225,42 @@ func (c *RemoteClient) AddUgroup(ug UserGroup) (Response, error) {
 		panic("invalid argument")
 	}
 
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	var rp Response
-
 	byteData, err := json.Marshal(ug)
 	if err != nil {
 		panic(err)
 	}
 
-	resp, err := c.client.DoPost("/api/grp", byteData)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/grp"
+	rp, err := doPost(url, byteData)
+	return rp, err
 }
 
 func (c *RemoteClient) ListAccounts() (Response, error) {
 
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/accounts", common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/accounts"
+	rp, err := doGet(url)
+	return rp, err
 }
 
 func (c *RemoteClient) AddUserAccount(user UserInfo) (Response, error) {
 	if len(user.Id) == 0 || len(user.Password) == 0 {
 		panic("invalid arguments")
 	}
-
-	c.m.Lock()
-	defer c.m.Unlock()
-
-	var rp Response
-
 	byteData, err := json.Marshal(user)
 	if err != nil {
 		panic(err)
 	}
-
-	resp, err := c.client.DoPost("/api/account", byteData)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/grp"
+	rp, err := doPost(url, byteData)
+	return rp, err
 
 }
+
 func (c *RemoteClient) GetAccountInfo(user string) (Response, error) {
 	if len(user) == 0 {
 		panic("invalid argument")
 	}
-	c.m.RLock()
-	defer c.m.RUnlock()
-
-	var rp Response
-	resp, err := c.client.DoAction("/api/account/"+user, common.Get)
-	if err != nil {
-		return rp, err
-	}
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	byteContent, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return rp, err
-	}
-
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return rp, err
-	}
-	return rp, nil
+	url := "/api/account/" + user
+	rp, err := doGet(url)
+	return rp, err
 }

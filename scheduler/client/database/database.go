@@ -1,9 +1,8 @@
 package database
 
 import (
-	"fmt"
-	//	"time"
 	"encoding/json"
+	"fmt"
 )
 
 var (
@@ -34,50 +33,6 @@ type Namespace struct {
 	CreateTime float64 `json:"create_time"`
 }
 
-/*
-type UserStatInfo struct {
-	Content InfoContent `json:"content"`
-	Message string      `json:"message"`
-	Result  int         `json:"result"`
-}
-
-type InfoContent struct {
-	NamespaceNum  int `json:"namespace"`
-	UserNum       int `json:"user"`
-	RepositoryNum int `json:"repository"`
-}
-
-type Respository struct {
-	Content RespositoryContent `json:"content"`
-	Message string             `json:"message"`
-	Result  int                `json:"result"`
-}
-
-type RespositoryContent struct {
-	PushTime  time.Time `json:"push_time"`
-	UserId    string    `json:"user_id"`
-	Namespace string    `json:"namespace"`
-	IsPublic  bool      `json:"is_public"`
-	Desc      string    `json:"desc"`
-	Id        string    `json:"_id"`
-	Delete    time.Time `json:"delete"`
-}
-
-type Account struct {
-	Content AccountContent `json:"content"`
-	Message string         `json:"message"`
-	Result  int            `json:"result"`
-}
-
-type AccountContent struct {
-	NickName string    `json:"nick_name"`
-	UserID   string    `json:"user_id"`
-	Avatar   string    `json:"avatar"` //头像
-	JoinTime time.Time `json:"join_time"`
-	Password string    `json:"password"`
-}
-*/
-
 type Response struct {
 	Content json.RawMessage
 	Message string
@@ -85,24 +40,27 @@ type Response struct {
 }
 
 type DatabaseClient interface {
+	/*user,namespace,repo statistic*/
 	GetInfo() (Response, error)
 
+	/*----repo*/
 	GetRepos() (Response, error)
 	ListRepoTags(string, string) (Response, error)
 	GetUserRepos(string) (Response, error)
 	GetNsRepos(string) (Response, error)
-
 	GetTagImage(string, string, string) (Response, error)
+
+	/*----Namespace*/
 	GetNamespaces() (Response, error)
 	GetSpecificNamespace(ns string) (Response, error)
 	AddNamespace(Namespace) (Response, error)
 
-	//
+	/*----UserGroup*/
 	GetNsUgroup(string) (Response, error)
 	AddUgroup(UserGroup) (Response, error)
 
+	/*----Accounts*/
 	ListAccounts() (Response, error)
-	//这里应该传入,从UI请求body中解析的user信息
 	AddUserAccount(UserInfo) (Response, error)
 	GetAccountInfo(string) (Response, error)
 }
