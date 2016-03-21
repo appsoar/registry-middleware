@@ -22,7 +22,7 @@ func getUserAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	vars := mux.Vars(r)
 	account := vars["account"]
 	if len(account) == 0 {
-		err = errjson.NewErrForbindden("invalid account argument")
+		err = errjson.NewErrForbidden("invalid account argument")
 		return
 	}
 
@@ -69,24 +69,28 @@ func addAccount(w http.ResponseWriter, r *http.Request) (err error) {
 		panic(err)
 	}
 
+	fmt.Printf("%v:%v\n", "new acccount", ui)
 	//检测数据合法性?
 	if len(ui.Id) == 0 || len(ui.Password) == 0 {
-		err = errjson.NewErrForbindden("invalid account")
+		log.Logger.Error("new account's Id or Password are empty")
+		err = errjson.NewErrForbidden("invalid account")
 		return
 	}
 
 	/*bcrypt加密*/
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(ui.password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(ui.Password), bcrypt.DefaultCost)
 	if err != nil {
 		panic(err)
 	}
-	ui.Password = hashedPassword
+	ui.Password = string(hashedPassword)
+	log.Logger.Debug("encrypted password:" + ui.Password)
 
 	//检测是否已经注册
 	//待完成
 	/*对ui的数据进行处理*/
 	_, err = globalClient.AddUserAccount(ui)
 	if err != nil {
+		log.Logger.Error(err.Error())
 		err = errjson.NewInternalServerError(err.Error())
 		return
 	}

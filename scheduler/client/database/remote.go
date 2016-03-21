@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"scheduler/client/common"
+	"scheduler/log"
 	"sync"
 )
 
@@ -50,7 +51,7 @@ func init() {
 
 }
 
-func doGet(url string) (Response, error) {
+func (c *RemoteClient) doGet(url string) (Response, error) {
 
 	c.m.RLock()
 	defer c.m.RUnlock()
@@ -58,6 +59,7 @@ func doGet(url string) (Response, error) {
 
 	resp, err := c.client.DoAction(url, common.Get)
 	if err != nil {
+		log.Logger.Error()
 		return rp, err
 	}
 	defer func() {
@@ -78,15 +80,17 @@ func doGet(url string) (Response, error) {
 	return rp, nil
 }
 
-func doPost(url string, byteData []byte) (Response, error) {
+func (c *RemoteClient) doPost(url string, byteData []byte) (Response, error) {
 
 	c.m.Lock()
 	defer c.m.Unlock()
 
 	var rp Response
 
+	log.Logger.Debug("request body:" + string(byteData))
 	resp, err := c.client.DoPost(url, byteData)
 	if err != nil {
+		log.Logger.Error(err.Error())
 		return rp, err
 	}
 	defer func() {
@@ -97,26 +101,29 @@ func doPost(url string, byteData []byte) (Response, error) {
 
 	byteContent, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Logger.Error("ioutil Read All fail")
 		return rp, err
 	}
 
 	err = json.Unmarshal(byteContent, &rp)
 	if err != nil {
+		log.Logger.Error("json decoded fail")
 		return rp, err
 	}
+
 	return rp, nil
 }
 
 func (c *RemoteClient) GetInfo() (Response, error) {
 
 	url := "/api/info"
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
 func (c *RemoteClient) GetRepos() (Response, error) {
 	url := "/api/repositories"
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 
 }
@@ -134,7 +141,7 @@ func (c *RemoteClient) ListRepoTags(name string, repo string) (Response, error) 
 		url = "/api/repository/" + name + "/" + repo
 	}
 
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 
 }
@@ -146,7 +153,7 @@ func (c *RemoteClient) GetUserRepos(user string) (Response, error) {
 	}
 
 	url := "/api/repositories/user/" + user
-	rp, err := goGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
@@ -157,7 +164,7 @@ func (c *RemoteClient) GetNsRepos(ns string) (Response, error) {
 	}
 
 	url := "/api/repositories/" + ns
-	rp, err := goGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
@@ -174,14 +181,14 @@ func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (Respon
 		url = "/api/tag/" + repo + "/" + tag
 	}
 
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
 func (c *RemoteClient) GetNamespaces() (Response, error) {
 
 	url := "/api/namespaces"
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
@@ -191,7 +198,7 @@ func (c *RemoteClient) GetSpecificNamespace(ns string) (Response, error) {
 	}
 
 	url := "/api/namespace/" + ns
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
@@ -206,7 +213,7 @@ func (c *RemoteClient) AddNamespace(ns Namespace) (Response, error) {
 	}
 
 	url := "/api/namespace"
-	rp, err := doPost(url, byteData)
+	rp, err := c.doPost(url, byteData)
 	return rp, err
 }
 
@@ -216,7 +223,7 @@ func (c *RemoteClient) GetNsUgroup(ns string) (Response, error) {
 	}
 
 	url := "/api/grp/" + ns
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
@@ -231,27 +238,32 @@ func (c *RemoteClient) AddUgroup(ug UserGroup) (Response, error) {
 	}
 
 	url := "/api/grp"
-	rp, err := doPost(url, byteData)
+	rp, err := c.doPost(url, byteData)
 	return rp, err
 }
 
 func (c *RemoteClient) ListAccounts() (Response, error) {
 
 	url := "/api/accounts"
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }
 
 func (c *RemoteClient) AddUserAccount(user UserInfo) (Response, error) {
 	if len(user.Id) == 0 || len(user.Password) == 0 {
+		log.Logger.Error("User Account have empty Id or Password")
 		panic("invalid arguments")
 	}
 	byteData, err := json.Marshal(user)
 	if err != nil {
+		log.Logger.Error("Json encoded fail")
 		panic(err)
 	}
-	url := "/api/grp"
-	rp, err := doPost(url, byteData)
+	url := "/api/account"
+	rp, err := c.doPost(url, byteData)
+	if err != nil {
+		log.Logger.Error(err.Error())
+	}
 	return rp, err
 
 }
@@ -261,6 +273,6 @@ func (c *RemoteClient) GetAccountInfo(user string) (Response, error) {
 		panic("invalid argument")
 	}
 	url := "/api/account/" + user
-	rp, err := doGet(url)
+	rp, err := c.doGet(url)
 	return rp, err
 }

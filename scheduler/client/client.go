@@ -215,10 +215,10 @@ func (c *Client) GetUserAccountDecoded(user string) (ui database.UserInfo, err e
 	log.Logger.Debug("get uesr account")
 	resp, err := c.database.GetAccountInfo(user)
 	if err != nil {
-		log.Logger.Debug("GetAccountInfo fail")
+		log.Logger.Debug("GetAccount Info fail")
 		return
 	}
-	log.Logger.Debug("resp:%v\n", resp)
+	log.Logger.Debug("resp content:%v\n", string(resp.Content))
 	if resp.Result != 0 {
 		err = errors.New(resp.Message)
 		return
@@ -262,9 +262,11 @@ func (c *Client) AddUserAccount(user database.UserInfo) (repoJson []byte, err er
 	log.Logger.Debug("add uesr account")
 	resp, err := c.database.AddUserAccount(user)
 	if err != nil {
+		log.Logger.Error(err.Error())
 		return
 	}
 	if resp.Result != 0 {
+		log.Logger.Debug(resp.Message)
 		err = errors.New(resp.Message)
 		return
 	}

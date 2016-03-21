@@ -37,25 +37,28 @@ func NewNotFoundError(msg string) NotFoundError {
 	return e
 
 }
+func (e NotFoundError) Error() string {
+	return e.Resp.Message
+}
 
 //403
-type ErrFforbindden struct {
+type ErrForbidden struct {
 	Resp RespError
 }
 
-func NewErrForbindden(msg string) ErrForbinden {
-	e := UnauthorizedError{
+func NewErrForbidden(msg string) ErrForbidden {
+	e := ErrForbidden{
 		Resp: RespError{
 			Type:    "error",
 			Status:  http.StatusForbidden,
-			Code:    "Forbindden",
+			Code:    "Forbidden",
 			Message: msg,
 		},
 	}
 	return e
 }
 
-func (e ErrForbinden) Error() string {
+func (e ErrForbidden) Error() string {
 	return e.Resp.Message
 }
 
