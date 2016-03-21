@@ -12,7 +12,6 @@ func getRepos(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
 		return
 	}
 
@@ -31,7 +30,6 @@ func getNsRepos(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
 		return
 	}
 
@@ -41,7 +39,7 @@ func getNsRepos(w http.ResponseWriter, r *http.Request) (err error) {
 	ns := vars["namespace"]
 
 	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
+		err = errjson.NewErrForbidden("invalid namespace")
 		return
 	}
 
@@ -58,7 +56,6 @@ func getUserRepos(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
 		return
 	}
 
@@ -68,7 +65,7 @@ func getUserRepos(w http.ResponseWriter, r *http.Request) (err error) {
 	ns := vars["user"]
 
 	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
+		err = errjson.NewErrForbidden("invalid namespace")
 		return
 	}
 
@@ -85,7 +82,6 @@ func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
 		return
 	}
 
@@ -96,7 +92,7 @@ func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
 	repoName := vars["repoName"]
 
 	if len(repoName) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
+		err = errjson.NewErrForbidden("invalid repos")
 		return
 	}
 
@@ -113,7 +109,6 @@ func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
-		//errJsonReturn(w, r, e)
 		return
 	}
 
@@ -125,7 +120,7 @@ func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
 	tagName := vars["tagName"]
 
 	if len(repoName) == 0 || len(tagName) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
+		err = errjson.NewErrForbidden("invalid repo or tag")
 		return
 	}
 

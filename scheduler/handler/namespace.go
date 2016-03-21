@@ -1,14 +1,16 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"scheduler/client/database"
 	"scheduler/errjson"
 	"scheduler/log"
 )
 
-func namespacesGet(w http.ResponseWriter, r *http.Request) (err error) {
+func GetAllNs(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
@@ -26,7 +28,7 @@ func namespacesGet(w http.ResponseWriter, r *http.Request) (err error) {
 	return
 }
 
-func namespaceGetSpecific(w http.ResponseWriter, r *http.Request) (err error) {
+func getSpecNs(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
 		err = errjson.NewUnauthorizedError("user doesn't login")
@@ -44,7 +46,57 @@ func namespaceGetSpecific(w http.ResponseWriter, r *http.Request) (err error) {
 	log.Logger.Info(user + " get " + ns + " namespace info")
 
 	nsJson, err := globalClient.GetSpecificNamespace(ns)
-	_, err = globalClient.GetSpecificNamespace(ns)
+	if err != nil {
+		err = errjson.NewInternalServerError("can't get ns info")
+		return
+	}
+	fmt.Fprintf(w, string(nsJson))
+	return
+}
+
+func getNsUgroup(w http.ResponseWriter, r *http.Request) (err error) {
+	user, err := getRequestUser(w, r)
+	if err != nil {
+		err = errjson.NewUnauthorizedError("user doesn't login")
+		//errJsonReturn(w, r, e)
+		return
+	}
+
+	vars := mux.Vars(r)
+	ns := vars["namespace"]
+	if len(ns) == 0 {
+		err = errjson.NewNotValidEntityError("invalid namespace")
+		return
+	}
+
+	log.Logger.Info(user + " get " + ns + " ugroup info")
+
+	nsJson, err := globalClient.GetNsUgroup(ns)
+	if err != nil {
+		err = errjson.NewInternalServerError("can't get ns info")
+		return
+	}
+	fmt.Fprintf(w, string(nsJson))
+	return
+}
+
+func addUgroup(w http.ResponseWriter, r *http.Request) (err error) {
+	user, err := getRequestUser(w, r)
+	if err != nil {
+		err = errjson.NewUnauthorizedError("user doesn't login")
+		//errJsonReturn(w, r, e)
+		return
+	}
+
+	log.Logger.Info(user + " add  new  ugroup")
+	decoder := json.NewDecoder(r.Body)
+	var ug database.UserGroup
+	err = decoder.Decode(&ug)
+	if err != nil {
+		panic(err)
+	}
+
+	nsJson, err := globalClient.AddUgroup(ug)
 	if err != nil {
 		err = errjson.NewInternalServerError("can't get ns info")
 		return

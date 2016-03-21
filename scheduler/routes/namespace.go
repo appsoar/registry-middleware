@@ -9,12 +9,26 @@ var nsRoutes = Routes{
 		"Namespace",
 		"GET",
 		"/api/v0/namespaces",
-		handler.NamespacesGetHandler,
+		handler.GetAllNsHandler,
 	},
 	Route{
 		"Namespace",
 		"GET",
 		"/api/v0/namespace/{namespace}",
-		handler.NamespaceSpecificGetHandler,
+		handler.GetSpecNsHandler,
+	},
+
+	//UserGroup
+	Route{
+		"Namespace",
+		"GET",
+		"/api/v0/grp/{namespace}",
+		handler.GetNsUgroup,
+	},
+	Route{
+		"Namespace",
+		"POST",
+		"/api/v0/grp",
+		handler.AddUgroup,
 	},
 }

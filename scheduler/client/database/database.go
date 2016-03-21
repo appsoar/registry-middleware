@@ -18,6 +18,22 @@ type UserInfo struct {
 	JoinTime float64 `json:"join_time"`
 }
 
+type UserGroup struct {
+	Id         int     `json:"_id"`
+	GroupName  string  `json:"group_name"`
+	Namespace  string  `json:"namespace"`
+	CreateTime float64 `json:"create_time"`
+	Desc       string  `json:"desc"`
+}
+
+type Namespace struct {
+	Id         string  `json:"_id"`
+	OwnerId    string  `json:"owener_id"`
+	Desc       string  `json:"desc"`
+	Perms      string  `json:"permission"`
+	CreateTime float64 `json:"create_time"`
+}
+
 /*
 type UserStatInfo struct {
 	Content InfoContent `json:"content"`
@@ -61,6 +77,7 @@ type AccountContent struct {
 	Password string    `json:"password"`
 }
 */
+
 type Response struct {
 	Content json.RawMessage
 	Message string
@@ -75,16 +92,14 @@ type DatabaseClient interface {
 	GetUserRepos(string) (Response, error)
 	GetNsRepos(string) (Response, error)
 
-	//GetAccounts() (Response, error)
-	//GetUserAccount(string) (Response, error)
 	GetTagImage(string, string, string) (Response, error)
 	GetNamespaces() (Response, error)
 	GetSpecificNamespace(ns string) (Response, error)
+	AddNamespace(Namespace) (Response, error)
 
 	//
-	AddNamespace(string) (Response, error)
-	ListNsUgroup(string, string) (Response, error)
-	AddNsUgroup(string, string) (Response, error)
+	GetNsUgroup(string) (Response, error)
+	AddUgroup(UserGroup) (Response, error)
 
 	ListAccounts() (Response, error)
 	//这里应该传入,从UI请求body中解析的user信息

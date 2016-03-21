@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"scheduler/client/common"
-	//"scheduler/log"
 	"sync"
 )
 
@@ -14,6 +13,27 @@ type RemoteClient struct {
 }
 
 func init() {
+	/*
+		Url := os.Getenv("DBURL")
+		accessKey := os.Getenv("ACCESSKEY")
+		secretKey := os.Getenv("SECRETKEY")
+		strTimeout := os.Getenv("TIMEOUT")
+
+		if len(Url) == 0 {
+			//出错处理
+			panic("not sp database server")
+		}
+		timeout := 0
+		if len(strTimeout) != 0 {
+			timeout, err := strconv.Atoi(strTimeout)
+			if err != nil {
+				log.Logger.Error("set database timeout fail: " + err.Error())
+				log.Logger.Error("set timeout default to 0")
+				timeout = 0
+			}
+		}
+
+	*/
 	opts := &common.ClientOpts{
 		Url:       "http://192.168.12.112:8080",
 		AccessKey: "",
@@ -29,6 +49,11 @@ func init() {
 	RegisterDatabaseClient("remote", remoteClient)
 
 }
+
+/*
+func get(url string) (Response, error) {
+
+}*/
 
 func (c *RemoteClient) GetInfo() (Response, error) {
 
@@ -192,24 +217,6 @@ func (c *RemoteClient) GetNsRepos(ns string) (Response, error) {
 	return rp, nil
 }
 
-/*
-	GetInfo(string) (Response, error)
-	//	DelImageTag(string) error
-
-	GetRepos() (Response, error)
-	GetSpecificRepos(string) (Response, error)
-	GetTagImage(string, string, string) (Response, error)
-*/
-
-/*
-	GetInfo(string) (Response, error)
-	//	DelImageTag(string) error
-
-	GetRepos() (Response, error)
-	GetSpecificRepos(string) (Response, error)
-	GetTagImage(string, string, string) (Response, error)
-*/
-
 func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (Response, error) {
 
 	if len(repo) == 0 || len(tag) == 0 {
@@ -307,8 +314,8 @@ func (c *RemoteClient) GetSpecificNamespace(ns string) (Response, error) {
 	return rp, nil
 }
 
-func (c *RemoteClient) AddNamespace(ns string) (Response, error) {
-	if len(ns) == 0 {
+func (c *RemoteClient) AddNamespace(ns Namespace) (Response, error) {
+	if len(ns.Id) == 0 {
 		panic("invalid arguments")
 	}
 
@@ -316,7 +323,13 @@ func (c *RemoteClient) AddNamespace(ns string) (Response, error) {
 	defer c.m.Unlock()
 
 	var rp Response
-	resp, err := c.client.DoAction("/api/namespace/"+ns, common.Post)
+
+	byteData, err := json.Marshal(ns)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := c.client.DoPost("/api/namespace", byteData)
 	if err != nil {
 		return rp, err
 	}
@@ -338,8 +351,8 @@ func (c *RemoteClient) AddNamespace(ns string) (Response, error) {
 	return rp, nil
 }
 
-func (c *RemoteClient) ListNsUgroup(ns string, ug string) (Response, error) {
-	if len(ns) == 0 || len(ug) == 0 {
+func (c *RemoteClient) GetNsUgroup(ns string) (Response, error) {
+	if len(ns) == 0 {
 		panic("invalid arguments")
 	}
 
@@ -347,7 +360,7 @@ func (c *RemoteClient) ListNsUgroup(ns string, ug string) (Response, error) {
 	defer c.m.RUnlock()
 
 	var rp Response
-	resp, err := c.client.DoAction("/api/grp/"+ns+"/"+ug, common.Get)
+	resp, err := c.client.DoAction("/api/grp/"+ns, common.Get)
 	if err != nil {
 		return rp, err
 	}
@@ -369,16 +382,22 @@ func (c *RemoteClient) ListNsUgroup(ns string, ug string) (Response, error) {
 	return rp, nil
 }
 
-func (c *RemoteClient) AddNsUgroup(ns string, ug string) (Response, error) {
-	if len(ns) == 0 || len(ug) == 0 {
-		panic("invalid arguments")
+func (c *RemoteClient) AddUgroup(ug UserGroup) (Response, error) {
+	if len(ug.GroupName) == 0 {
+		panic("invalid argument")
 	}
 
 	c.m.Lock()
 	defer c.m.Unlock()
 
 	var rp Response
-	resp, err := c.client.DoAction("/api/grp/"+ns+"/"+ug, common.Post)
+
+	byteData, err := json.Marshal(ug)
+	if err != nil {
+		panic(err)
+	}
+
+	resp, err := c.client.DoPost("/api/grp", byteData)
 	if err != nil {
 		return rp, err
 	}

@@ -7,7 +7,6 @@ import (
 	"scheduler/client/sysinfo"
 
 	"encoding/json"
-	//	"fmt"
 	"scheduler/log"
 )
 
@@ -50,6 +49,7 @@ func NewClient() (*Client, error) {
 	return client, nil
 }
 
+/*====================获取系统统计信息====================*/
 type SysInfo struct {
 	CpuUsage      int               `json:"cpuUsage"`
 	TotalRam      uint64            `json:"totalRam"`
@@ -121,6 +121,8 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 
 }
 
+/*
+
 func (c *Client) ListImages() ([]string, error) {
 	images, err := c.registry.ListImages()
 	if err != nil {
@@ -165,7 +167,9 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 	err := c.registry.DeleteImageTag(image, tag)
 	return err
 }
+*/
 
+/*===============获取用户数量,命名空间,镜像数统计===============*/
 type UserStats struct {
 	User       int `json:"user"`
 	repository int `json:"repository"`
@@ -187,15 +191,6 @@ func (c *Client) GetUserStats() (us UserStats, err error) {
 	return
 }
 
-/*
-type UserInfo struct {
-	Id       string  `json:"_id"`
-	Password string  `json:"password"`
-	NickName string  `json:"nick_name"`
-	Avatar   string  `json:"avatar"`
-	JoinTime float64 `json:"join_time"`
-}*/
-
 func (c *Client) GetAccounts() (respJson []byte, err error) {
 
 	resp, err := c.database.ListAccounts()
@@ -210,7 +205,8 @@ func (c *Client) GetAccounts() (respJson []byte, err error) {
 	return
 }
 
-func (c *Client) GetUserAccount(user string) (ui database.UserInfo, err error) {
+/*解析后的用户账号信息*/
+func (c *Client) GetUserAccountDecoded(user string) (ui database.UserInfo, err error) {
 
 	if len(user) == 0 {
 		log.Logger.Error("invalid argument...")
@@ -222,7 +218,7 @@ func (c *Client) GetUserAccount(user string) (ui database.UserInfo, err error) {
 		log.Logger.Debug("GetAccountInfo fail")
 		return
 	}
-	log.Logger.Debug("%v\n", resp)
+	log.Logger.Debug("resp:%v\n", resp)
 	if resp.Result != 0 {
 		err = errors.New(resp.Message)
 		return
@@ -236,7 +232,27 @@ func (c *Client) GetUserAccount(user string) (ui database.UserInfo, err error) {
 	return
 }
 
-//存在问题
+func (c *Client) GetUserAccount(user string) (respJson []byte, err error) {
+
+	if len(user) == 0 {
+		log.Logger.Error("invalid argument...")
+		panic("invalid argument..")
+	}
+	log.Logger.Debug("get uesr account")
+	resp, err := c.database.GetAccountInfo(user)
+	if err != nil {
+		log.Logger.Debug("GetAccountInfo fail")
+		return
+	}
+	log.Logger.Debug("resp:%v\n", resp)
+	if resp.Result != 0 {
+		err = errors.New(resp.Message)
+		return
+	}
+	respJson = resp.Content
+	return
+}
+
 func (c *Client) AddUserAccount(user database.UserInfo) (repoJson []byte, err error) {
 
 	if len(user.Id) == 0 {
@@ -325,6 +341,8 @@ func (c *Client) GetUserRepos(user string) (repoJson []byte, err error) {
 	return
 }
 
+/*===================镜像===================*/
+
 type TagInfo struct {
 	Id          int    `json:"_id"`
 	UserID      string `json:"user_id"`
@@ -360,6 +378,8 @@ func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagNam
 	repoJson = resp.Content
 	return
 }
+
+/*================ 命名空间 ==================*/
 
 type Namespace struct {
 	Id         string  `json:"_id"`
@@ -401,6 +421,43 @@ func (c *Client) GetSpecificNamespace(ns string) (jsonMsg []byte, err error) {
 		panic("invalid ns")
 	}
 	resp, err = c.database.GetSpecificNamespace(ns)
+	if err != nil {
+		return
+	}
+
+	jsonMsg = resp.Content
+	log.Logger.Debug(string(resp.Content))
+	return
+}
+func (c *Client) AddNamespace(ns database.Namespace) (jsonMsg []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.AddNamespace(ns)
+	if err != nil {
+		return
+	}
+
+	jsonMsg = resp.Content
+	log.Logger.Debug(string(resp.Content))
+	return
+}
+
+/* ============== 用户组 ==================*/
+
+func (c *Client) GetNsUgroup(ns string) (jsonMsg []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.GetNsUgroup(ns)
+	if err != nil {
+		return
+	}
+
+	jsonMsg = resp.Content
+	log.Logger.Debug(string(resp.Content))
+	return
+}
+
+func (c *Client) AddUgroup(ug database.UserGroup) (jsonMsg []byte, err error) {
+	var resp database.Response
+	resp, err = c.database.AddUgroup(ug)
 	if err != nil {
 		return
 	}

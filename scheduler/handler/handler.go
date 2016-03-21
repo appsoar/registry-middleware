@@ -2,29 +2,34 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/websocket"
-	"io/ioutil"
 	"net/http"
 	"scheduler/client"
 	"scheduler/errjson"
 	"scheduler/log"
 	"scheduler/session"
 	_ "scheduler/session/provider"
+	"sync"
 	"time"
 )
 
 var (
-	globalSessions *session.Manager
-	globalClient   *client.Client
+	globalSessions   *session.Manager
+	globalClient     *client.Client
+	globalLoginedMap *LoginedUser
 )
 
+//这里并没有处理,用户来自CLI的情况。
+//CLI没有cookie,用户应当是通过Access/Secret的方式进行的
+//目前想到的方法是getRequestUser失败后,
+//从request请求中获取授权信息(即access/secret)
+//进行权限判断之类的e.
 func getRequestUser(w http.ResponseWriter, r *http.Request) (string, error) {
 	sess := globalSessions.SessionStart(w, r)
 	strI := sess.Get("username")
 	if strI == nil {
-		log.Logger.Warn("invalid logout request")
+		//处理从CLI发送的请求
+		log.Logger.Warn("invalid request")
 		globalSessions.SessionDestroy(w, r)
 		e := errjson.NewUnauthorizedError("user doesn't login")
 		return "", e
@@ -68,6 +73,12 @@ func errJsonReturn(w http.ResponseWriter, r *http.Request, err error) {
 		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
 			panic(err)
 		}
+
+	case errjson.ErrForbidden:
+		w.WriteHeader(e.Resp.Status)
+		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
+			panic(err)
+		}
 	default:
 		panic("not json return error")
 	}
@@ -76,88 +87,6 @@ func errJsonReturn(w http.ResponseWriter, r *http.Request, err error) {
 func jsonReturn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	return
-}
-
-type LoginInfo struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-/*UI传递过来的密码是先经过Md5加密过的,服务端再进行bcrypt加密.*/
-/*这里存在一个问题:当不通过UI,而通过客户端连接,用户输入的是不经过、
-  mk5加密过的明文密码.会无法通过密码验证.
-*/
-func login(w http.ResponseWriter, r *http.Request) (err error) {
-
-	var info LoginInfo
-	body, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		panic(err)
-	}
-	log.Logger.Debug(string(body))
-
-	//转换成byte
-	err = json.Unmarshal(body, &info)
-	if err != nil {
-		panic(err)
-	}
-	if len(info.Username) == 0 || len(info.Password) == 0 {
-		log.Logger.Info("invalid username or password")
-		err = errjson.NewUnauthorizedError("invalid username or password ")
-		//	errJsonReturn(w, r, e)
-		return
-	}
-	/*
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(info.password), bcrypt.DefaultCost)
-		if err != nil {
-			panic(err)
-		}*/
-
-	ui, err := globalClient.GetUserAccount(info.Username)
-	if err != nil {
-		log.Logger.Error(err.Error())
-		err = errjson.NewInternalServerError("server can't get userinfo")
-		return
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(ui.Password), []byte(info.Password))
-	if err != nil {
-		err = errjson.NewUnauthorizedError("incorrect password")
-		return
-	}
-
-	sess := globalSessions.SessionStart(w, r)
-	sess.Set("username", info.Username)
-	log.Logger.Info("%s Login", info.Username)
-	return
-}
-
-func logout(w http.ResponseWriter, r *http.Request) (err error) {
-	//*如果是一个未登录用户调用了该方法
-	//SessionManager会根据session中有无设置username来确定
-	//是以登录用户，还是未登录用户
-	sess := globalSessions.SessionStart(w, r)
-	strI := sess.Get("username")
-	if strI == nil {
-		log.Logger.Warn("invalid logout request")
-		globalSessions.SessionDestroy(w, r)
-		err = errjson.NewUnauthorizedError("invalid username or password ")
-		//errJsonReturn(w, r, e)
-		return
-	}
-	fmt.Println(strI)
-
-	username, ok := strI.(string)
-	if !ok {
-		errStr := "session username key/value pair are not string"
-		log.Logger.Error(errStr)
-		panic(errStr)
-	}
-	log.Logger.Debug("%s logout", username) //打印当前登录用户的用户名
-
-	globalSessions.SessionDestroy(w, r)
 	return
 }
 
@@ -180,7 +109,6 @@ func GetSysInfo(ws *websocket.Conn) {
 		time.Sleep(1 * time.Second)
 
 	}
-
 }
 
 func GetUserStats(ws *websocket.Conn) {
@@ -272,8 +200,8 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	errJsonReturn(w, r, e)
 }
 
-func NamespacesGetHandler(w http.ResponseWriter, r *http.Request) {
-	if err := namespacesGet(w, r); err != nil {
+func GetAllNsHandler(w http.ResponseWriter, r *http.Request) {
+	if err := GetAllNs(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}
@@ -281,8 +209,8 @@ func NamespacesGetHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func NamespaceSpecificGetHandler(w http.ResponseWriter, r *http.Request) {
-	if err := namespaceGetSpecific(w, r); err != nil {
+func GetSpecNsHandler(w http.ResponseWriter, r *http.Request) {
+	if err := getSpecNs(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}
@@ -343,14 +271,62 @@ func GetAccounts(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func GetUserAccount(w http.ResponseWriter, r *http.Request) {
+	if err := getUserAccount(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func AddAccount(w http.ResponseWriter, r *http.Request) {
+	if err := addAccount(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func GetNsUgroup(w http.ResponseWriter, r *http.Request) {
+	if err := getNsUgroup(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func AddUgroup(w http.ResponseWriter, r *http.Request) {
+	if err := addUgroup(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+/*记录已登录用户*/
+type LoginedUser struct {
+	user map[string]int
+	m    *sync.RWMutex
+}
+
 func init() {
 	var err error
+	globalLoginedMap = &LoginedUser{
+		user: make(map[string]int),
+		m:    new(sync.RWMutex),
+	}
+
 	//所有的客户端请求通过globalClient完成
 	globalClient, err = client.NewClient()
 	if err != nil {
 		log.Logger.Debug("fail to create scheduler client:%s", err.Error())
 		panic(err)
 	}
+
 	//创建一个全局的session管理器,session存储方式为内存,cookie名为gosessionid
 	globalSessions, err = session.NewManager("memory", "gosessionid", 3600)
 	if err != nil {

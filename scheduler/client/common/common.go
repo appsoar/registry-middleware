@@ -70,5 +70,3 @@ func (c BaseClient) DoPost(path string, data []byte) (resp *http.Response, err e
 	return
 
 }
-
-//func

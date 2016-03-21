@@ -1,6 +1,7 @@
 package log
 
 import (
+	//	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego/logs"
 	"os"
@@ -11,6 +12,10 @@ var (
 	debug      = false
 	LogChannel = make(chan string)
 )
+
+type UserLog struct {
+	user string
+}
 
 type WebLog struct {
 	Time   string `json:"time"`
@@ -28,6 +33,7 @@ func Debug(format string, v ...interface{}) {
 		} else {
 			str = format
 		}
+
 		LogChannel <- str
 	}()
 }

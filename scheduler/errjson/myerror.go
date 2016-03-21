@@ -38,7 +38,24 @@ func NewNotFoundError(msg string) NotFoundError {
 
 }
 
-func (e NotFoundError) Error() string {
+//403
+type ErrFforbindden struct {
+	Resp RespError
+}
+
+func NewErrForbindden(msg string) ErrForbinden {
+	e := UnauthorizedError{
+		Resp: RespError{
+			Type:    "error",
+			Status:  http.StatusForbidden,
+			Code:    "Forbindden",
+			Message: msg,
+		},
+	}
+	return e
+}
+
+func (e ErrForbinden) Error() string {
 	return e.Resp.Message
 }
 
