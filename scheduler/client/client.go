@@ -76,6 +76,7 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 	go func() {
 		cpuUsage, err := c.sysInfo.GetCpuUsage()
 		if err != nil {
+			log.Logger.Error("getCpuUsage fail")
 			panic(err)
 		}
 		cpuchan <- cpuUsage
@@ -84,6 +85,7 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 	go func() {
 		totalRam, availableRam, err := c.sysInfo.GetRamStat()
 		if err != nil {
+			log.Logger.Error("getRamStat fail")
 			panic(err)
 		}
 		ramchan[0] <- totalRam
@@ -93,6 +95,7 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 	go func() {
 		totalDisk, availableDisk, err := c.sysInfo.GetDiskStat()
 		if err != nil {
+			log.Logger.Error("get diskstat fail")
 			panic(err)
 		}
 		diskchan[0] <- totalDisk
@@ -102,6 +105,7 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 	go func() {
 		netStat, err := c.sysInfo.GetNetStat()
 		if err != nil {
+			log.Logger.Error("get netstat fail")
 			panic(err)
 		}
 		netchan <- netStat
@@ -170,13 +174,8 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 */
 
 /*===============获取用户数量,命名空间,镜像数统计===============*/
-type UserStats struct {
-	User       int `json:"user"`
-	repository int `json:"repository"`
-	Namespace  int `json:"namespace"`
-}
 
-func (c *Client) GetUserStats() (us UserStats, err error) {
+func (c *Client) GetUserStats() (us database.UserStats, err error) {
 	var resp json.RawMessage
 
 	resp, err = c.database.GetInfo()
@@ -226,7 +225,6 @@ func (c *Client) GetUserAccountDecoded(user string) (ui database.UserInfo, err e
 	log.Logger.Debug("get uesr account")
 	resp, err := c.database.GetAccountInfo(user)
 	if err != nil {
-		log.Logger.Debug("GetAccount Info fail")
 		return
 	}
 	//userinfo, ok := resp.Content.(UserInfo)
@@ -240,7 +238,6 @@ func (c *Client) GetUserAccount(user string) (resp []byte, err error) {
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
-	log.Logger.Debug("get uesr account")
 	resp, err = c.database.GetAccountInfo(user)
 	return
 }
@@ -251,27 +248,18 @@ func (c *Client) AddUserAccount(user database.UserInfo) (resp []byte, err error)
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
-	log.Logger.Debug("add uesr account")
 	resp, err = c.database.AddUserAccount(user)
 	return
 }
 
-type Repository struct {
-	Id         string  `json:"_id"`
-	Namespace  string  `json:"namespace"`
-	User       string  `json:"user_id"`
-	PushTime   float64 `json:"push_time"`
-	Desc       string  `json:"desc"`
-	Public     bool    `json:"is_public"`
-	DeleteTime float64 `json:"delete"`
-}
+/*=============Repositories===================*/
 
 func (c *Client) GetRepositories() (resp []byte, err error) {
 	resp, err = c.database.GetRepos()
 	return
 }
 
-func (c *Client) GetRepositoriesDecoded() (repo []Repository, err error) {
+func (c *Client) GetRepositoriesDecoded() (repo []database.Repository, err error) {
 	var resp json.RawMessage
 	resp, err = c.database.GetRepos()
 	if err != nil {
@@ -304,19 +292,7 @@ func (c *Client) GetUserRepos(user string) (resp []byte, err error) {
 
 /*===================镜像===================*/
 
-type TagInfo struct {
-	Id          int    `json:"_id"`
-	UserID      string `json:"user_id"`
-	Respository string `json:"repository"`
-	TagName     string `json:"tag_name"`
-	Size        int    `json:"size"`
-	Digest      string `json:"digest"`
-	CreateTime  int    `json:"create_time"`
-	Delete      int    `json:"delete"`
-	PullNum     int    `json:"pull_num"`
-}
-
-func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string, tagName string) (tag TagInfo, err error) {
+func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string, tagName string) (tag database.TagInfo, err error) {
 	var resp json.RawMessage
 	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
 	if err != nil {
@@ -325,6 +301,7 @@ func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string,
 
 	err = json.Unmarshal(resp, &tag)
 	if err != nil {
+		log.Logger.Error("json parse fail")
 		panic(err)
 	}
 	return
@@ -337,15 +314,7 @@ func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagNam
 
 /*================ 命名空间 ==================*/
 
-type Namespace struct {
-	Id         string  `json:"_id"`
-	OwnerId    string  `json:"_id"`
-	Desc       string  `json:"desc"`
-	Permission string  `json:"public"`
-	CreateTime float64 `json:"create_time"`
-}
-
-func (c *Client) GetNamespacesDecoded() (ns []Namespace, err error) {
+func (c *Client) GetNamespacesDecoded() (ns []database.Namespace, err error) {
 	var resp json.RawMessage
 	resp, err = c.database.GetNamespaces()
 	if err != nil {
@@ -354,6 +323,7 @@ func (c *Client) GetNamespacesDecoded() (ns []Namespace, err error) {
 
 	err = json.Unmarshal(resp, &ns)
 	if err != nil {
+		log.Logger.Error("json parse fail")
 		panic(err)
 	}
 	return
@@ -366,11 +336,13 @@ func (c *Client) GetNamespaces() (resp []byte, err error) {
 
 func (c *Client) GetSpecificNamespace(ns string) (resp []byte, err error) {
 	if len(ns) == 0 {
+		log.Logger.Error("invalid argument")
 		panic("invalid ns")
 	}
 	resp, err = c.database.GetSpecificNamespace(ns)
 	return
 }
+
 func (c *Client) AddNamespace(ns database.Namespace) (resp []byte, err error) {
 	resp, err = c.database.AddNamespace(ns)
 	return

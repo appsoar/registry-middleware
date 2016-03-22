@@ -54,37 +54,78 @@ type UserGroup struct {
 	Desc       string  `json:"desc"`
 }
 
+type UserStats struct {
+	User       int `json:"user"`
+	repository int `json:"repository"`
+	Namespace  int `json:"namespace"`
+}
+type Repository struct {
+	Id         string  `json:"_id"`
+	Namespace  string  `json:"namespace"`
+	User       string  `json:"user_id"`
+	PushTime   float64 `json:"push_time"`
+	Desc       string  `json:"desc"`
+	Public     bool    `json:"is_public"`
+	DeleteTime float64 `json:"delete"`
+}
+
+type TagInfo struct {
+	Id          int    `json:"_id"`
+	UserID      string `json:"user_id"`
+	Respository string `json:"repository"`
+	TagName     string `json:"tag_name"`
+	Size        int    `json:"size"`
+	Digest      string `json:"digest"`
+	CreateTime  int    `json:"create_time"`
+	Delete      int    `json:"delete"`
+	PullNum     int    `json:"pull_num"`
+}
+
 type Namespace struct {
 	Id         string  `json:"_id"`
-	OwnerId    string  `json:"owener_id"`
+	OwnerId    string  `json:"_id"`
 	Desc       string  `json:"desc"`
-	Perms      string  `json:"permission"`
+	Permission string  `json:"public"`
 	CreateTime float64 `json:"create_time"`
 }
 
 type DatabaseClient interface {
-	/*user,namespace,repo statistic*/
-	GetInfo() (json.RawMessage, error)
+	/* user,namespace,repos number statistic*/
+	GetInfo() (json.RawMessage, error) /*UserStats*/
 
-	/*----repo*/
+	/*----repo ---- struct : Repository*/
+	/*list all repos*/
 	GetRepos() (json.RawMessage, error)
-	ListRepoTags(string, string) (json.RawMessage, error)
-	GetUserRepos(string) (json.RawMessage, error)
-	GetNsRepos(string) (json.RawMessage, error)
-	GetTagImage(string, string, string) (json.RawMessage, error)
+	/*list all repos of user*/
+	GetUserRepos(user string) (json.RawMessage, error)
+	/*list all repos under ns*/
+	GetNsRepos(ns string) (json.RawMessage, error)
 
-	/*----Namespace*/
+	/*-----Tag ----- struct : TagInfo*/
+	GetTagImage(string, string, string) (json.RawMessage, error)
+	/*list repo's tags or tags of specified ns|user's repo*/
+	ListRepoTags(userOrns string, repo string) (json.RawMessage, error)
+
+	/*----Namespace --- struct : Namespace*/
+	/*list all ns: return []Namespace*/
 	GetNamespaces() (json.RawMessage, error)
+	/*get info of specific ns*/
 	GetSpecificNamespace(ns string) (json.RawMessage, error)
+	/*add a new ns*/
 	AddNamespace(Namespace) (json.RawMessage, error)
 
-	/*----UserGroup*/
-	GetNsUgroup(string) (json.RawMessage, error)
+	/*----UserGroup ---- struct : UserGroup*/
+	/*get user groups under ns*/
+	GetNsUgroup(ns string) (json.RawMessage, error)
+	/*add a user ugroup*/
 	AddUgroup(UserGroup) (json.RawMessage, error)
 
-	/*----Accounts*/
+	/*----Accounts -- struct : UserInfo*/
+	/*list all user accounts*/
 	ListAccounts() (json.RawMessage, error)
+	/*add a new user accounts*/
 	AddUserAccount(UserInfo) (json.RawMessage, error)
+	/*get specific uesr account*/
 	GetAccountInfo(string) (json.RawMessage, error)
 }
 

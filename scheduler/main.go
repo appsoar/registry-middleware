@@ -1,9 +1,6 @@
 package main
 
 import (
-	//"net/http"
-	//"scheduler"
-	//"scheduler/log"
 	"scheduler/middleware"
 	"scheduler/routes"
 )
