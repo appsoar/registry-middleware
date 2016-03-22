@@ -135,12 +135,14 @@ func (c *RemoteClient) GetInfo() (json.RawMessage, error) {
 
 	url := "/api/info"
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
 func (c *RemoteClient) GetRepos() (json.RawMessage, error) {
 	url := "/api/repositories"
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 
 }
@@ -159,6 +161,7 @@ func (c *RemoteClient) ListRepoTags(name string, repo string) (json.RawMessage, 
 	}
 
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 
 }
@@ -171,6 +174,7 @@ func (c *RemoteClient) GetUserRepos(user string) (json.RawMessage, error) {
 
 	url := "/api/repositories/user/" + user
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -182,6 +186,7 @@ func (c *RemoteClient) GetNsRepos(ns string) (json.RawMessage, error) {
 
 	url := "/api/repositories/" + ns
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -199,6 +204,7 @@ func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (json.R
 	}
 
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -206,6 +212,7 @@ func (c *RemoteClient) GetNamespaces() (json.RawMessage, error) {
 
 	url := "/api/namespaces"
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -216,6 +223,7 @@ func (c *RemoteClient) GetSpecificNamespace(ns string) (json.RawMessage, error) 
 
 	url := "/api/namespace/" + ns
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -231,6 +239,7 @@ func (c *RemoteClient) AddNamespace(ns Namespace) (json.RawMessage, error) {
 
 	url := "/api/namespace"
 	rp, err := c.doPost(url, byteData)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -241,6 +250,7 @@ func (c *RemoteClient) GetNsUgroup(ns string) (json.RawMessage, error) {
 
 	url := "/api/grp/" + ns
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -256,6 +266,7 @@ func (c *RemoteClient) AddUgroup(ug UserGroup) (json.RawMessage, error) {
 
 	url := "/api/grp"
 	rp, err := c.doPost(url, byteData)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -263,6 +274,7 @@ func (c *RemoteClient) ListAccounts() (json.RawMessage, error) {
 
 	url := "/api/accounts"
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }
 
@@ -281,6 +293,7 @@ func (c *RemoteClient) AddUserAccount(user UserInfo) (json.RawMessage, error) {
 	if err != nil {
 		log.Logger.Error(err.Error())
 	}
+	log.Logger.Debug(string(rp))
 	return rp, err
 
 }
@@ -291,5 +304,6 @@ func (c *RemoteClient) GetAccountInfo(user string) (json.RawMessage, error) {
 	}
 	url := "/api/account/" + user
 	rp, err := c.doGet(url)
+	log.Logger.Debug(string(rp))
 	return rp, err
 }

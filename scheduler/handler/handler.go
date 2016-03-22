@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"golang.org/x/net/websocket"
 	"net/http"
+	//	"os"
+	"fmt"
+	"io/ioutil"
 	"scheduler/client"
 	"scheduler/errjson"
 	"scheduler/log"
@@ -92,6 +95,9 @@ func jsonReturn(w http.ResponseWriter, r *http.Request) {
 
 //返回系统信息
 func GetSysInfo(ws *websocket.Conn) {
+	defer func() {
+		ws.Close()
+	}()
 	for {
 		sysinfo, err := globalClient.GetSysInfo()
 		if err != nil {
@@ -100,18 +106,25 @@ func GetSysInfo(ws *websocket.Conn) {
 
 		b, err := json.Marshal(sysinfo)
 		if err != nil {
-			panic(err)
+			//panic(err)
+			log.Logger.Error(err.Error())
+			time.Sleep(2 * time.Second)
+			continue
 		}
 
 		if err = websocket.Message.Send(ws, string(b)); err != nil {
-			panic(err)
+			//panic(err)
+			//			log.Logger.Error(err.Error())
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 
 	}
 }
 
 func GetUserStats(ws *websocket.Conn) {
+	defer func() {
+		ws.Close()
+	}()
 	for {
 		/*使用channel来控制更新频率*/
 		/*新增或者移除用户时,发送channel,触发websocket写入*/
@@ -139,37 +152,70 @@ func GetUserStats(ws *websocket.Conn) {
 		//使用轮询,10s一次查询
 		us, err := globalClient.GetUserStats()
 		if err != nil {
-			panic(err)
+			//panic(err)
+			log.Logger.Error(err.Error())
+			continue
 		}
 		b, err := json.Marshal(us)
 		if err := websocket.Message.Send(ws, string(b)); err != nil {
-			panic(err)
+			//	panic(err)
+			//			log.Logger.Error(err.Error())
 		}
 		time.Sleep(10 * time.Second)
 	}
 
 }
 
+type LogLine struct {
+	Lines LogStruct `json:"lines"`
+}
+
 type LogStruct struct {
-	Log string `json:"log"`
+	Time   string `json:"time"`
+	User   string `json:"user"`
+	Level  string `json:"level"`
+	Detail string `json:"detail"`
 }
 
 //需要修改
+/*
 func GetLog(ws *websocket.Conn) {
+	defer func() {
+		ws.Close()
+	}()
 	for {
-		infos := <-log.LogChannel
-		logStruct := LogStruct{Log: infos}
-		log.Logger.Info(infos)
-
-		b, err := json.Marshal(logStruct)
+		content, err := ioutil.ReadFile("./logs.json")
 		if err != nil {
+			log.Logger.Error("read logs fail")
+			continue
+		}
+
+		if err := websocket.Message.Send(ws, string(content)); err != nil {
 			panic(err)
 		}
-		if err := websocket.Message.Send(ws, string(b)); err != nil {
-			panic(err)
-		}
+		time.Sleep(1 * time.Second)
 
 	}
+}
+*/
+func getLog(w http.ResponseWriter, r *http.Request) (err error) {
+	content, err := ioutil.ReadFile("/home/kiongf/registry-middleware/src/scheduler/handler/logs.json")
+	if err != nil {
+		err = errjson.NewInternalServerError("read logs.json fail:" + err.Error())
+		return
+	}
+	fmt.Fprintf(w, string(content))
+	return
+
+}
+
+func GetLog(w http.ResponseWriter, r *http.Request) {
+	if err := getLog(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
 }
 
 /*为了解决请求返回信息冗余的问题,合并http请求控制器最后路径为errJsonReturn或jsonReturn

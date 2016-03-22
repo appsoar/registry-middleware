@@ -29,6 +29,8 @@ func checkDbErr(err1 error) (err error) {
 		case database.EDbException,
 			database.ENotInterface:
 			err = errjson.NewInternalServerError(e.Msg)
+		default:
+			err = errjson.NewInternalServerError(err.Error())
 		}
 	}
 	return
@@ -163,6 +165,7 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 
 	ui, err := globalClient.GetUserAccountDecoded(info.Username)
 	if err != nil {
+		log.Logger.Error(err.Error())
 		err = checkDbErr(err)
 		return
 	}

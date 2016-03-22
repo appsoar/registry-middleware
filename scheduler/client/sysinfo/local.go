@@ -5,7 +5,7 @@ import (
 	linuxproc "github.com/c9s/goprocinfo/linux"
 	//	"os"
 	//	"errors"
-	"scheduler/log"
+	//	"scheduler/log"
 	"time"
 )
 
@@ -66,7 +66,7 @@ func (c *LocalSysinfo) GetRamStat() (Total uint64, Available uint64, err error) 
 	//Available = mem.MemAvailable / 1024 / 1024
 	Total = mem.MemTotal / 1024
 	Available = mem.MemAvailable / 1024
-	log.Logger.Debug("all:%vMB,free:%vMB", Total, Available)
+	//	log.Logger.Debug("all:%vMB,free:%vMB", Total, Available)
 	return
 }
 
@@ -79,7 +79,7 @@ func (c *LocalSysinfo) GetDiskStat() (All uint64, Free uint64, err error) {
 	//获取的是字节单位
 	All = disk.All / 1024 / 1024
 	Free = disk.Free / 1024 / 1024
-	log.Logger.Debug("all:%vMB,free:%vMB", All, Free)
+	//	log.Logger.Debug("all:%vMB,free:%vMB", All, Free)
 	return
 
 }

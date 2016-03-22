@@ -117,10 +117,11 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 	info.TotalDisk = <-diskchan[0]
 	info.AvailableDisk = <-diskchan[1]
 	info.NetStat = <-netchan
+	/*
+		log.Logger.Debug("cpu:%v, total:%v,avail:%v, total:%v,avail:%v\n", info.CpuUsage, info.TotalRam, info.AvailableRam, info.TotalRam, info.AvailableDisk)
+		log.Logger.Debug("%+v", info.NetStat)
 
-	log.Logger.Debug("cpu:%v, total:%v,avail:%v, total:%v,avail:%v\n", info.CpuUsage, info.TotalRam, info.AvailableRam, info.TotalRam, info.AvailableDisk)
-	log.Logger.Debug("%+v", info.NetStat)
-
+	*/
 	return *info, nil
 
 }
