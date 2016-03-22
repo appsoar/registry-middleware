@@ -19,7 +19,7 @@ func getRepos(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.GetRepositories()
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -45,7 +45,7 @@ func getNsRepos(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.GetNsRepos(ns)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -71,7 +71,7 @@ func getUserRepos(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.GetUserRepos(ns)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -98,7 +98,7 @@ func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.ListRepoTags(name, repoName)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get repo info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -126,7 +126,7 @@ func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.GetTagImage(name, repoName, tagName)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get repo info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))

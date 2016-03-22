@@ -21,7 +21,7 @@ func GetAllNs(w http.ResponseWriter, r *http.Request) (err error) {
 	log.Logger.Info(user + "get namespace info")
 	nsJson, err := globalClient.GetNamespaces()
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -39,7 +39,7 @@ func getSpecNs(w http.ResponseWriter, r *http.Request) (err error) {
 	vars := mux.Vars(r)
 	ns := vars["namespace"]
 	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
+		err = errjson.NewErrForbidden("invalid namespace")
 		return
 	}
 
@@ -47,7 +47,7 @@ func getSpecNs(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.GetSpecificNamespace(ns)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -65,7 +65,7 @@ func getNsUgroup(w http.ResponseWriter, r *http.Request) (err error) {
 	vars := mux.Vars(r)
 	ns := vars["namespace"]
 	if len(ns) == 0 {
-		err = errjson.NewNotValidEntityError("invalid namespace")
+		err = errjson.NewErrForbidden("invalid namespace")
 		return
 	}
 
@@ -73,7 +73,7 @@ func getNsUgroup(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.GetNsUgroup(ns)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -98,7 +98,7 @@ func addUgroup(w http.ResponseWriter, r *http.Request) (err error) {
 
 	nsJson, err := globalClient.AddUgroup(ug)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get ns info")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))

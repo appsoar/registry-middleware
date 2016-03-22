@@ -12,6 +12,28 @@ import (
 	"scheduler/log"
 )
 
+func checkDbErr(err1 error) (err error) {
+	if e, ok := err1.(database.EDatabase); ok {
+		switch e.Code {
+		case database.EPermission,
+			database.ENoRecord,
+			database.EMissingId,
+			database.EInvalidFilter,
+			database.EIncompleteUserInfo,
+			database.EUserExists,
+			database.EIncompleteGroupInfo,
+			database.EGroupExists,
+			database.EInvalidNsInfo,
+			database.ENsExists:
+			err = errjson.NewErrForbidden(e.Msg)
+		case database.EDbException,
+			database.ENotInterface:
+			err = errjson.NewInternalServerError(e.Msg)
+		}
+	}
+	return
+}
+
 func getUserAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
@@ -46,7 +68,7 @@ func getAccounts(w http.ResponseWriter, r *http.Request) (err error) {
 	log.Logger.Info(user + " get accounts")
 	nsJson, err := globalClient.GetAccounts()
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get accounts")
+		err = checkDbErr(err)
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -90,8 +112,7 @@ func addAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	/*对ui的数据进行处理*/
 	_, err = globalClient.AddUserAccount(ui)
 	if err != nil {
-		log.Logger.Error(err.Error())
-		err = errjson.NewInternalServerError(err.Error())
+		err = checkDbErr(err)
 		return
 	}
 	return
@@ -142,8 +163,7 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 
 	ui, err := globalClient.GetUserAccountDecoded(info.Username)
 	if err != nil {
-		log.Logger.Error(err.Error())
-		err = errjson.NewInternalServerError("server can't get userinfo")
+		err = checkDbErr(err)
 		return
 	}
 
