@@ -177,43 +177,39 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 /*===============获取用户数量,命名空间,镜像数统计===============*/
 
 func (c *Client) GetUserStats() (us database.UserStats, err error) {
-	var resp json.RawMessage
-
-	resp, err = c.database.GetInfo()
+	respRec, err := c.database.GetInfo()
 	if err != nil {
 		return
 	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 
-	err = json.Unmarshal(resp, &us)
+	var rp database.Response
+	err = json.Unmarshal(resp, &rp)
 	if err != nil {
 		panic(err)
 	}
+	err = json.Unmarshal(rp.Content, &us)
+	if err != nil {
+		panic(err)
+	}
+
 	return
 }
 
 func (c *Client) GetAccounts() (resp []byte, err error) {
 
-	resp, err = c.database.ListAccounts()
+	respRec, err := c.database.ListAccounts()
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
-	/*
-		if e, ok := err.(database.Edatabase); ok {
-			switch e.Code {
-			case database.EPermission,
-				database.EnoRecord,
-				database.EMissingId,
-				database.EInvalidFilter,
-				database.EParameter,
-				database.EIncompleteUserInfo,
-				database.EUserExists,
-				database.EIncompleteUserInfo,
-				database.EGroupExits,
-				database.EInvalidNsInfo,
-				database.NsExists:
-					errJson.
-
-			}
-		}
-	*/
 }
 
 /*解析后的用户账号信息*/
@@ -224,12 +220,21 @@ func (c *Client) GetUserAccountDecoded(user string) (ui database.UserInfo, err e
 		panic("invalid argument..")
 	}
 	log.Logger.Debug("get uesr account")
-	resp, err := c.database.GetAccountInfo(user)
+	respRec, err := c.database.GetAccountInfo(user)
 	if err != nil {
 		return
 	}
-	//userinfo, ok := resp.Content.(UserInfo)
-	err = json.Unmarshal(resp, &ui)
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+
+	var rp database.Response
+	err = json.Unmarshal(resp, &rp)
+	if err == nil {
+		err = json.Unmarshal(rp.Content, &ui)
+
+	}
 	return
 }
 
@@ -239,7 +244,14 @@ func (c *Client) GetUserAccount(user string) (resp []byte, err error) {
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
-	resp, err = c.database.GetAccountInfo(user)
+	respRec, err := c.database.GetAccountInfo(user)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
@@ -249,25 +261,48 @@ func (c *Client) AddUserAccount(user database.UserInfo) (resp []byte, err error)
 		log.Logger.Error("invalid argument...")
 		panic("invalid argument..")
 	}
-	resp, err = c.database.AddUserAccount(user)
+	respRec, err := c.database.AddUserAccount(user)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 /*=============Repositories===================*/
 
 func (c *Client) GetRepositories() (resp []byte, err error) {
-	resp, err = c.database.GetRepos()
+	respRec, err := c.database.GetRepos()
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 func (c *Client) GetRepositoriesDecoded() (repo []database.Repository, err error) {
-	var resp json.RawMessage
-	resp, err = c.database.GetRepos()
+	respRec, err := c.database.GetRepos()
 	if err != nil {
 		return
 	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 
-	err = json.Unmarshal(resp, &repo)
+	var rp database.Response
+	err = json.Unmarshal(resp, &rp)
+	if err != nil {
+		err = errors.New("json parse fail")
+	}
+
+	err = json.Unmarshal(rp.Content, &repo)
 	if err != nil {
 		err = errors.New("json parse fail")
 	}
@@ -275,54 +310,97 @@ func (c *Client) GetRepositoriesDecoded() (repo []database.Repository, err error
 }
 
 func (c *Client) ListRepoTags(usernameOrNamespace string, repoName string) (resp []byte, err error) {
-	resp, err = c.database.ListRepoTags(usernameOrNamespace, repoName)
+	respRec, err := c.database.ListRepoTags(usernameOrNamespace, repoName)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 
 	return
 }
 
 func (c *Client) GetNsRepos(ns string) (resp []byte, err error) {
-	resp, err = c.database.GetNsRepos(ns)
+	respRec, err := c.database.GetNsRepos(ns)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 
 }
 
 func (c *Client) GetUserRepos(user string) (resp []byte, err error) {
-	resp, err = c.database.GetUserRepos(user)
+	respRec, err := c.database.GetUserRepos(user)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 /*===================镜像===================*/
 
 func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string, tagName string) (tag database.TagInfo, err error) {
-	var resp json.RawMessage
-	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+	var respUmr database.Response
+	respRec, err := c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
 	if err != nil {
 		return
 	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 
-	err = json.Unmarshal(resp, &tag)
+	err = json.Unmarshal(resp, &respUmr)
 	if err != nil {
 		log.Logger.Error("json parse fail")
 		panic(err)
 	}
+	err = json.Unmarshal(respUmr.Content, &tag)
 	return
 }
 
 func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagName string) (resp []byte, err error) {
-	resp, err = c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+	respRec, err := c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 /*================ 命名空间 ==================*/
 
 func (c *Client) GetNamespacesDecoded() (ns []database.Namespace, err error) {
-	var resp json.RawMessage
-	resp, err = c.database.GetNamespaces()
+	var rp database.Response
+	respRec, err := c.database.GetNamespaces()
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(resp, &ns)
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+
+	err = json.Unmarshal(resp, &rp)
+	if err != nil {
+		log.Logger.Error("json parse fail")
+		panic(err)
+	}
+	err = json.Unmarshal(rp.Content, &ns)
 	if err != nil {
 		log.Logger.Error("json parse fail")
 		panic(err)
@@ -331,7 +409,14 @@ func (c *Client) GetNamespacesDecoded() (ns []database.Namespace, err error) {
 }
 
 func (c *Client) GetNamespaces() (resp []byte, err error) {
-	resp, err = c.database.GetNamespaces()
+	respRec, err := c.database.GetNamespaces()
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
@@ -340,23 +425,51 @@ func (c *Client) GetSpecificNamespace(ns string) (resp []byte, err error) {
 		log.Logger.Error("invalid argument")
 		panic("invalid ns")
 	}
-	resp, err = c.database.GetSpecificNamespace(ns)
+	respRec, err := c.database.GetSpecificNamespace(ns)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 func (c *Client) AddNamespace(ns database.Namespace) (resp []byte, err error) {
-	resp, err = c.database.AddNamespace(ns)
+	respRec, err := c.database.AddNamespace(ns)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 /* ============== 用户组 ==================*/
 
 func (c *Client) GetNsUgroup(ns string) (resp []byte, err error) {
-	resp, err = c.database.GetNsUgroup(ns)
+	respRec, err := c.database.GetNsUgroup(ns)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }
 
 func (c *Client) AddUgroup(ug database.UserGroup) (resp []byte, err error) {
-	resp, err = c.database.AddUgroup(ug)
+	respRec, err := c.database.AddUgroup(ug)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
 	return
 }

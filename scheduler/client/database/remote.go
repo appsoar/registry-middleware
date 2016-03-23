@@ -57,11 +57,10 @@ func init() {
 
 }
 
-func (c *RemoteClient) doGet(url string) (content json.RawMessage, err error) {
+func (c *RemoteClient) doGet(url string) (content []byte, err error) {
 
 	c.m.RLock()
 	defer c.m.RUnlock()
-	rp := response{}
 
 	resp, err := c.client.DoAction(url, common.Get)
 	if err != nil {
@@ -78,26 +77,26 @@ func (c *RemoteClient) doGet(url string) (content json.RawMessage, err error) {
 	if err != nil {
 		return
 	}
+	/*
+		err = json.Unmarshal(byteContent, &rp)
+		if err != nil {
+			return
+		}
 
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		return
-	}
-
-	if rp.Result != 0 {
-		err = EDatabase{Code: rp.Result, Msg: rp.Message}
-		return
-	}
-	content = rp.Content
+		if rp.Result != 0 {
+			err = EDatabase{Code: rp.Result, Msg: rp.Message}
+			return
+		}
+		content = rp.Content
+	*/
+	content = byteContent
 	return
 }
 
-func (c *RemoteClient) doPost(url string, byteData []byte) (content json.RawMessage, err error) {
+func (c *RemoteClient) doPost(url string, byteData []byte) (content []byte, err error) {
 
 	c.m.Lock()
 	defer c.m.Unlock()
-
-	var rp response
 
 	log.Logger.Debug("request body:" + string(byteData))
 	resp, err := c.client.DoPost(url, byteData)
@@ -116,22 +115,24 @@ func (c *RemoteClient) doPost(url string, byteData []byte) (content json.RawMess
 		log.Logger.Error("ioutil Read All fail")
 		return
 	}
+	/*
+		err = json.Unmarshal(byteContent, &rp)
+		if err != nil {
+			log.Logger.Error("json decoded fail")
+			return
+		}
 
-	err = json.Unmarshal(byteContent, &rp)
-	if err != nil {
-		log.Logger.Error("json decoded fail")
-		return
-	}
-
-	if rp.Result != 0 {
-		err = EDatabase{Code: rp.Result, Msg: rp.Message}
-		return
-	}
-	content = rp.Content
+		if rp.Result != 0 {
+			err = EDatabase{Code: rp.Result, Msg: rp.Message}
+			return
+		}
+		content = rp.Content
+	*/
+	content = byteContent
 	return
 }
 
-func (c *RemoteClient) GetInfo() (json.RawMessage, error) {
+func (c *RemoteClient) GetInfo() (interface{}, error) {
 
 	url := "/api/info"
 	rp, err := c.doGet(url)
@@ -139,7 +140,7 @@ func (c *RemoteClient) GetInfo() (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetRepos() (json.RawMessage, error) {
+func (c *RemoteClient) GetRepos() (interface{}, error) {
 	url := "/api/repositories"
 	rp, err := c.doGet(url)
 	log.Logger.Debug(string(rp))
@@ -147,7 +148,7 @@ func (c *RemoteClient) GetRepos() (json.RawMessage, error) {
 
 }
 
-func (c *RemoteClient) ListRepoTags(name string, repo string) (json.RawMessage, error) {
+func (c *RemoteClient) ListRepoTags(name string, repo string) (interface{}, error) {
 
 	if len(repo) == 0 {
 		panic("invalid argment")
@@ -166,7 +167,7 @@ func (c *RemoteClient) ListRepoTags(name string, repo string) (json.RawMessage, 
 
 }
 
-func (c *RemoteClient) GetUserRepos(user string) (json.RawMessage, error) {
+func (c *RemoteClient) GetUserRepos(user string) (interface{}, error) {
 
 	if len(user) == 0 {
 		panic("invalid argment")
@@ -178,7 +179,7 @@ func (c *RemoteClient) GetUserRepos(user string) (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetNsRepos(ns string) (json.RawMessage, error) {
+func (c *RemoteClient) GetNsRepos(ns string) (interface{}, error) {
 
 	if len(ns) == 0 {
 		panic("invalid argment")
@@ -190,7 +191,7 @@ func (c *RemoteClient) GetNsRepos(ns string) (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (json.RawMessage, error) {
+func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (interface{}, error) {
 
 	if len(repo) == 0 || len(tag) == 0 {
 		panic("invalid arguments")
@@ -208,7 +209,7 @@ func (c *RemoteClient) GetTagImage(name string, repo string, tag string) (json.R
 	return rp, err
 }
 
-func (c *RemoteClient) GetNamespaces() (json.RawMessage, error) {
+func (c *RemoteClient) GetNamespaces() (interface{}, error) {
 
 	url := "/api/namespaces"
 	rp, err := c.doGet(url)
@@ -216,7 +217,7 @@ func (c *RemoteClient) GetNamespaces() (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetSpecificNamespace(ns string) (json.RawMessage, error) {
+func (c *RemoteClient) GetSpecificNamespace(ns string) (interface{}, error) {
 	if len(ns) == 0 {
 		panic("invalid arguments")
 	}
@@ -227,7 +228,7 @@ func (c *RemoteClient) GetSpecificNamespace(ns string) (json.RawMessage, error) 
 	return rp, err
 }
 
-func (c *RemoteClient) AddNamespace(ns Namespace) (json.RawMessage, error) {
+func (c *RemoteClient) AddNamespace(ns Namespace) (interface{}, error) {
 	if len(ns.Id) == 0 {
 		panic("invalid arguments")
 	}
@@ -243,7 +244,7 @@ func (c *RemoteClient) AddNamespace(ns Namespace) (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) GetNsUgroup(ns string) (json.RawMessage, error) {
+func (c *RemoteClient) GetNsUgroup(ns string) (interface{}, error) {
 	if len(ns) == 0 {
 		panic("invalid arguments")
 	}
@@ -254,7 +255,7 @@ func (c *RemoteClient) GetNsUgroup(ns string) (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) AddUgroup(ug UserGroup) (json.RawMessage, error) {
+func (c *RemoteClient) AddUgroup(ug UserGroup) (interface{}, error) {
 	if len(ug.GroupName) == 0 {
 		panic("invalid argument")
 	}
@@ -270,7 +271,7 @@ func (c *RemoteClient) AddUgroup(ug UserGroup) (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) ListAccounts() (json.RawMessage, error) {
+func (c *RemoteClient) ListAccounts() (interface{}, error) {
 
 	url := "/api/accounts"
 	rp, err := c.doGet(url)
@@ -278,7 +279,7 @@ func (c *RemoteClient) ListAccounts() (json.RawMessage, error) {
 	return rp, err
 }
 
-func (c *RemoteClient) AddUserAccount(user UserInfo) (json.RawMessage, error) {
+func (c *RemoteClient) AddUserAccount(user UserInfo) (interface{}, error) {
 	if len(user.Id) == 0 || len(user.Password) == 0 {
 		log.Logger.Error("User Account have empty Id or Password")
 		panic("invalid arguments")
@@ -298,7 +299,7 @@ func (c *RemoteClient) AddUserAccount(user UserInfo) (json.RawMessage, error) {
 
 }
 
-func (c *RemoteClient) GetAccountInfo(user string) (json.RawMessage, error) {
+func (c *RemoteClient) GetAccountInfo(user string) (interface{}, error) {
 	if len(user) == 0 {
 		panic("invalid argument")
 	}

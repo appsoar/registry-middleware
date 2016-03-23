@@ -89,44 +89,50 @@ type Namespace struct {
 	CreateTime float64 `json:"create_time"`
 }
 
+type Response struct {
+	Content json.RawMessage
+	Message string
+	Result  int
+}
+
 type DatabaseClient interface {
 	/* user,namespace,repos number statistic*/
-	GetInfo() (json.RawMessage, error) /*UserStats*/
+	GetInfo() (interface{}, error) /*UserStats*/
 
 	/*----repo ---- struct : Repository*/
 	/*list all repos*/
-	GetRepos() (json.RawMessage, error)
+	GetRepos() (interface{}, error)
 	/*list all repos of user*/
-	GetUserRepos(user string) (json.RawMessage, error)
+	GetUserRepos(user string) (interface{}, error)
 	/*list all repos under ns*/
-	GetNsRepos(ns string) (json.RawMessage, error)
+	GetNsRepos(ns string) (interface{}, error)
 
 	/*-----Tag ----- struct : TagInfo*/
-	GetTagImage(string, string, string) (json.RawMessage, error)
+	GetTagImage(string, string, string) (interface{}, error)
 	/*list repo's tags or tags of specified ns|user's repo*/
-	ListRepoTags(userOrns string, repo string) (json.RawMessage, error)
+	ListRepoTags(userOrns string, repo string) (interface{}, error)
 
 	/*----Namespace --- struct : Namespace*/
 	/*list all ns: return []Namespace*/
-	GetNamespaces() (json.RawMessage, error)
+	GetNamespaces() (interface{}, error)
 	/*get info of specific ns*/
-	GetSpecificNamespace(ns string) (json.RawMessage, error)
+	GetSpecificNamespace(ns string) (interface{}, error)
 	/*add a new ns*/
-	AddNamespace(Namespace) (json.RawMessage, error)
+	AddNamespace(Namespace) (interface{}, error)
 
 	/*----UserGroup ---- struct : UserGroup*/
 	/*get user groups under ns*/
-	GetNsUgroup(ns string) (json.RawMessage, error)
+	GetNsUgroup(ns string) (interface{}, error)
 	/*add a user ugroup*/
-	AddUgroup(UserGroup) (json.RawMessage, error)
+	AddUgroup(UserGroup) (interface{}, error)
 
 	/*----Accounts -- struct : UserInfo*/
 	/*list all user accounts*/
-	ListAccounts() (json.RawMessage, error)
+	ListAccounts() (interface{}, error)
 	/*add a new user accounts*/
-	AddUserAccount(UserInfo) (json.RawMessage, error)
+	AddUserAccount(UserInfo) (interface{}, error)
 	/*get specific uesr account*/
-	GetAccountInfo(string) (json.RawMessage, error)
+	GetAccountInfo(string) (interface{}, error)
 }
 
 //注册数据库客户端

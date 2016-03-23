@@ -15,7 +15,7 @@ func getRepos(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get repositories")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	nsJson, err := globalClient.GetRepositories()
 	if err != nil {
@@ -33,7 +33,7 @@ func getNsRepos(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get repositories")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	vars := mux.Vars(r)
 	ns := vars["namespace"]
@@ -59,7 +59,7 @@ func getUserRepos(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get repositories")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	vars := mux.Vars(r)
 	ns := vars["user"]
@@ -85,7 +85,7 @@ func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get repositories")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	vars := mux.Vars(r)
 	name := vars["usernameOrNamespace"]
@@ -112,7 +112,7 @@ func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get repositories")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	vars := mux.Vars(r)
 	name := vars["usernameOrNamespace"]

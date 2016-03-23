@@ -13,33 +13,37 @@ import (
 )
 
 func checkDbErr(err1 error) (err error) {
-	if e, ok := err1.(database.EDatabase); ok {
-		switch e.Code {
-		case database.EPermission,
-			database.ENoRecord,
-			database.EMissingId,
-			database.EInvalidFilter,
-			database.EIncompleteUserInfo,
-			database.EUserExists,
-			database.EIncompleteGroupInfo,
-			database.EGroupExists,
-			database.EInvalidNsInfo,
-			database.ENsExists:
-			err = errjson.NewErrForbidden(e.Msg)
-		case database.EDbException,
-			database.ENotInterface:
-			err = errjson.NewInternalServerError(e.Msg)
-		default:
-			err = errjson.NewInternalServerError(err.Error())
+	/*
+		if e, ok := err1.(database.EDatabase); ok {
+			switch e.Code {
+			case database.EPermission,
+				database.ENoRecord,
+				database.EMissingId,
+				database.EInvalidFilter,
+				database.EIncompleteUserInfo,
+				database.EUserExists,
+				database.EIncompleteGroupInfo,
+				database.EGroupExists,
+				database.EInvalidNsInfo,
+				database.ENsExists:
+				err = errjson.NewErrForbidden(e.Msg)
+			case database.EDbException,
+				database.ENotInterface:
+				err = errjson.NewInternalServerError(e.Msg)
+			default:
+				err = errjson.NewInternalServerError(err.Error())
+			}
 		}
-	}
+	*/
+	err = errjson.NewInternalServerError("Database Error:" + err1.Error())
 	return
+
 }
 
 func getUserAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {
-		err = errjson.NewUnauthorizedError("user doesn't login")
+		err = errjson.NewUnauthorizedError(r.RemoteAddr + " :user doesn't login")
 		return
 	}
 
@@ -50,10 +54,10 @@ func getUserAccount(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get user account info")
+	log.Logger.Info(r.RemoteAddr + " : " + user + " get user account info")
 	nsJson, err := globalClient.GetUserAccount(account)
 	if err != nil {
-		err = errjson.NewInternalServerError("can't get account")
+		err = errjson.NewInternalServerError(" can't get account")
 		return
 	}
 	fmt.Fprintf(w, string(nsJson))
@@ -67,7 +71,7 @@ func getAccounts(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get accounts")
+	log.Logger.Info(r.RemoteAddr + " : " + user + " get accounts")
 	nsJson, err := globalClient.GetAccounts()
 	if err != nil {
 		err = checkDbErr(err)
@@ -85,7 +89,7 @@ func addAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	}
 	//检查权限
 
-	log.Logger.Info(user + " add new user")
+	log.Logger.Info(r.RemoteAddr + " : " + user + " add new user")
 	decoder := json.NewDecoder(r.Body)
 	var ui database.UserInfo
 	err = decoder.Decode(&ui)
@@ -96,7 +100,7 @@ func addAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	fmt.Printf("%v:%v\n", "new acccount", ui)
 	//检测数据合法性?
 	if len(ui.Id) == 0 || len(ui.Password) == 0 {
-		log.Logger.Error("new account's Id or Password are empty")
+		log.Logger.Error(r.RemoteAddr + ":" + "new account's Id or Password are empty")
 		err = errjson.NewErrForbidden("invalid account")
 		return
 	}
@@ -139,7 +143,7 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 	if err != nil {
 		panic(err)
 	}
-	log.Logger.Debug(string(body))
+	log.Logger.Debug(r.RemoteAddr + " : " + string(body))
 
 	//转换成byte
 	err = json.Unmarshal(body, &info)
@@ -147,22 +151,23 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 		panic(err)
 	}
 	if len(info.Username) == 0 || len(info.Password) == 0 {
-		log.Logger.Info("invalid username or password")
+		log.Logger.Info(r.RemoteAddr + ":invalid username or password")
 		err = errjson.NewUnauthorizedError("invalid username or password ")
 		return
 	}
+	/*
+		globalLoginedMap.m.RLock()
+		fmt.Println(globalLoginedMap.user)
+		if _, ok := globalLoginedMap.user[info.Username]; ok {
+			globalLoginedMap.m.RUnlock()
+			log.Logger.Debug(info.Username + " have loggined")
+			err = errjson.NewErrForbidden("User have loggin")
 
-	globalLoginedMap.m.RLock()
-	fmt.Println(globalLoginedMap.user)
-	if _, ok := globalLoginedMap.user[info.Username]; ok {
+			return
+		}
 		globalLoginedMap.m.RUnlock()
-		log.Logger.Debug(info.Username + " have loggined")
-		err = errjson.NewUnauthorizedError("User have loggin")
 
-		return
-	}
-	globalLoginedMap.m.RUnlock()
-
+	*/
 	ui, err := globalClient.GetUserAccountDecoded(info.Username)
 	if err != nil {
 		log.Logger.Error(err.Error())
@@ -176,14 +181,15 @@ func login(w http.ResponseWriter, r *http.Request) (err error) {
 		err = errjson.NewUnauthorizedError("incorrect password")
 		return
 	}
-
-	globalLoginedMap.m.Lock()
-	globalLoginedMap.user[info.Username] = 1
-	defer globalLoginedMap.m.Unlock()
+	/*
+		globalLoginedMap.m.Lock()
+		globalLoginedMap.user[info.Username] = 1
+		defer globalLoginedMap.m.Unlock()
+	*/
 
 	sess := globalSessions.SessionStart(w, r)
 	sess.Set("username", info.Username)
-	log.Logger.Info("%s Login", info.Username)
+	log.Logger.Info(r.RemoteAddr+" : "+"%s Login", info.Username)
 	return
 }
 
@@ -192,7 +198,7 @@ func logout(w http.ResponseWriter, r *http.Request) (err error) {
 	sess := globalSessions.SessionStart(w, r)
 	strI := sess.Get("username")
 	if strI == nil {
-		log.Logger.Warn("invalid logout request")
+		log.Logger.Warn(r.RemoteAddr + " :invalid logout request")
 		globalSessions.SessionDestroy(w, r)
 		err = errjson.NewUnauthorizedError("user don't login")
 		//errJsonReturn(w, r, e)
@@ -206,7 +212,7 @@ func logout(w http.ResponseWriter, r *http.Request) (err error) {
 		log.Logger.Error(errStr)
 		panic(errStr)
 	}
-	log.Logger.Debug("%s logout", username) //打印当前登录用户的用户名
+	log.Logger.Debug(r.RemoteAddr+":%s logout", username) //打印当前登录用户的用户名
 	globalLoginedMap.m.Lock()
 	delete(globalLoginedMap.user, username)
 	defer globalLoginedMap.m.Unlock()

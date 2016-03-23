@@ -32,9 +32,9 @@ func getRequestUser(w http.ResponseWriter, r *http.Request) (string, error) {
 	strI := sess.Get("username")
 	if strI == nil {
 		//处理从CLI发送的请求
-		log.Logger.Warn("invalid request")
+		log.Logger.Warn(r.RemoteAddr + " :invalid request")
 		globalSessions.SessionDestroy(w, r)
-		e := errjson.NewUnauthorizedError("user doesn't login")
+		e := errjson.NewUnauthorizedError(r.RemoteAddr + " :user doesn't login")
 		return "", e
 	}
 
@@ -88,8 +88,8 @@ func errJsonReturn(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func jsonReturn(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	//	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	//	w.WriteHeader(http.StatusOK)
 	return
 }
 

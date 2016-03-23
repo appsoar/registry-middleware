@@ -18,7 +18,7 @@ func GetAllNs(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + "get namespace info")
+	log.Logger.Info(r.RemoteAddr + ":" + user + "get namespace info")
 	nsJson, err := globalClient.GetNamespaces()
 	if err != nil {
 		err = checkDbErr(err)
@@ -43,7 +43,7 @@ func getSpecNs(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get " + ns + " namespace info")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get " + ns + " namespace info")
 
 	nsJson, err := globalClient.GetSpecificNamespace(ns)
 	if err != nil {
@@ -69,7 +69,7 @@ func getNsUgroup(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " get " + ns + " ugroup info")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " get " + ns + " ugroup info")
 
 	nsJson, err := globalClient.GetNsUgroup(ns)
 	if err != nil {
@@ -88,7 +88,7 @@ func addUgroup(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	log.Logger.Info(user + " add  new  ugroup")
+	log.Logger.Info(r.RemoteAddr + ":" + user + " add  new  ugroup")
 	decoder := json.NewDecoder(r.Body)
 	var ug database.UserGroup
 	err = decoder.Decode(&ug)

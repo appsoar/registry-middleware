@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	filter = [...]string{"lo"}
+	filter = [...]string{"lo", "veth"}
 )
 
 type LocalSysinfo struct {
