@@ -6,7 +6,8 @@ import (
 	"net/http"
 	//	"os"
 	"fmt"
-	"io/ioutil"
+	"github.com/gorilla/mux"
+	//	"io/ioutil"
 	"scheduler/client"
 	"scheduler/errjson"
 	"scheduler/log"
@@ -87,6 +88,7 @@ func errJsonReturn(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
+//和Fprintf(w,"")冲突,会触发multiple header write错误
 func jsonReturn(w http.ResponseWriter, r *http.Request) {
 	//	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	//	w.WriteHeader(http.StatusOK)
@@ -153,11 +155,11 @@ func GetUserStats(ws *websocket.Conn) {
 		us, err := globalClient.GetUserStats()
 		if err != nil {
 			//panic(err)
-			log.Logger.Error(err.Error())
+			//	log.Logger.Error(err.Error())
 			continue
 		}
-		b, err := json.Marshal(us)
-		if err := websocket.Message.Send(ws, string(b)); err != nil {
+		//		b, err := json.Marshal(us)
+		if err := websocket.Message.Send(ws, string(us)); err != nil {
 			//	panic(err)
 			//			log.Logger.Error(err.Error())
 		}
@@ -199,10 +201,22 @@ func GetLog(ws *websocket.Conn) {
 }
 */
 func getLog(w http.ResponseWriter, r *http.Request) (err error) {
-	content, err := ioutil.ReadFile("/home/kiongf/registry-middleware/src/scheduler/handler/logs.json")
+	/*
+		content, err := ioutil.ReadFile("/home/kiongf/registry-middleware/src/scheduler/handler/logs.json")
+		if err != nil {
+			err = errjson.NewInternalServerError("read logs.json fail:" + err.Error())
+			return
+		}
+	*/
+
+	vars := mux.Vars(r)
+	line_offset, ok := vars["line_offset"]
+	if !ok {
+		panic("invalid")
+	}
+	content, err := globalClient.GetLog(line_offset)
 	if err != nil {
-		err = errjson.NewInternalServerError("read logs.json fail:" + err.Error())
-		return
+		return err
 	}
 	fmt.Fprintf(w, string(content))
 	return
@@ -211,6 +225,48 @@ func getLog(w http.ResponseWriter, r *http.Request) (err error) {
 
 func GetLog(w http.ResponseWriter, r *http.Request) {
 	if err := getLog(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func getIfs(w http.ResponseWriter, r *http.Request) (err error) {
+	ifs, err := globalClient.GetNetIfs()
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, string(ifs))
+	return
+}
+
+func GetIfs(w http.ResponseWriter, r *http.Request) {
+	if err := getIfs(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func getIfStat(w http.ResponseWriter, r *http.Request) (err error) {
+	vars := mux.Vars(r)
+	netif, ok := vars["netif"]
+	if !ok {
+		err := errjson.NewErrForbidden("netif must set")
+		return err
+	}
+	ifs, err := globalClient.GetNetIfStat(netif)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(w, string(ifs))
+	return
+}
+
+func GetIfStat(w http.ResponseWriter, r *http.Request) {
+	if err := getIfStat(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}
@@ -257,6 +313,24 @@ func GetAllNsHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetSpecNsHandler(w http.ResponseWriter, r *http.Request) {
 	if err := getSpecNs(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func UpdateNs(w http.ResponseWriter, r *http.Request) {
+	if err := updateNs(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func DeleteNs(w http.ResponseWriter, r *http.Request) {
+	if err := deleteNs(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}
@@ -335,6 +409,24 @@ func AddAccount(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func UpdateAccount(w http.ResponseWriter, r *http.Request) {
+	if err := updateAccount(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	if err := deleteAccount(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
 func GetNsUgroup(w http.ResponseWriter, r *http.Request) {
 	if err := getNsUgroup(w, r); err != nil {
 		errJsonReturn(w, r, err)
@@ -346,6 +438,33 @@ func GetNsUgroup(w http.ResponseWriter, r *http.Request) {
 
 func AddUgroup(w http.ResponseWriter, r *http.Request) {
 	if err := addUgroup(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func DeleteUgroup(w http.ResponseWriter, r *http.Request) {
+	if err := deleteUgroup(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func UpdateUgroup(w http.ResponseWriter, r *http.Request) {
+	if err := updateUgroup(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
+}
+
+func GetUgroup(w http.ResponseWriter, r *http.Request) {
+	if err := getUgroup(w, r); err != nil {
 		errJsonReturn(w, r, err)
 		return
 	}

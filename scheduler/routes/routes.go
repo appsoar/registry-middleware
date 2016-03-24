@@ -61,7 +61,20 @@ var routes = Routes{
 	Route{
 		"Logs",
 		"GET",
-		"/api/v0/logs",
+		"/api/v0/logs/{line_offset:[1-9][0-9]*(/[0-9]*)?}",
 		handler.GetLog,
+	},
+
+	Route{
+		"SysInfo",
+		"GET",
+		"/api/v0/sysinfo/netifs",
+		handler.GetIfs,
+	},
+	Route{
+		"Logs",
+		"GET",
+		"/api/v0/sysinfo/netifs/{netif}",
+		handler.GetIfStat,
 	},
 }

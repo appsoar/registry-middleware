@@ -14,7 +14,7 @@ var repoRoutes = Routes{
 	Route{
 		"Repos",
 		"GET",
-		"/api/v0/repository/{usernameOrNamespace}/{repoName}",
+		"/api/v0/repository/{repoName:[-a-zA-Z0-9]+(/[-a-zA-Z0-9]+)*}",
 		handler.ListRepoTagsHandler,
 	},
 	Route{
@@ -32,7 +32,7 @@ var repoRoutes = Routes{
 	Route{
 		"Repos",
 		"GET",
-		"/api/v0/repository/{usernameOrNamespace}/{repoName}/{tagName}",
+		"/api/v0/tag/{repoName:[-a-zA-Z0-9]+(/[-a-zA-Z0-9]+)*}/{tagName}",
 		handler.GetTagImageHandler,
 	},
 }

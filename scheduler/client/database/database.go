@@ -55,9 +55,9 @@ type UserGroup struct {
 }
 
 type UserStats struct {
-	User       int `json:"user"`
-	repository int `json:"repository"`
-	Namespace  int `json:"namespace"`
+	User       float64 `json:"user"`
+	repository float64 `json:"repository"`
+	Namespace  float64 `json:"namespace"`
 }
 type Repository struct {
 	Id         string  `json:"_id"`
@@ -108,15 +108,17 @@ type DatabaseClient interface {
 	GetNsRepos(ns string) (interface{}, error)
 
 	/*-----Tag ----- struct : TagInfo*/
-	GetTagImage(string, string, string) (interface{}, error)
+	GetTagImage(string, string) (interface{}, error)
 	/*list repo's tags or tags of specified ns|user's repo*/
-	ListRepoTags(userOrns string, repo string) (interface{}, error)
+	ListRepoTags(repo string) (interface{}, error)
 
 	/*----Namespace --- struct : Namespace*/
 	/*list all ns: return []Namespace*/
 	GetNamespaces() (interface{}, error)
 	/*get info of specific ns*/
 	GetSpecificNamespace(ns string) (interface{}, error)
+	DeleteNamespace(ns string) (interface{}, error)
+	UpdateNamespace() (interface{}, error)
 	/*add a new ns*/
 	AddNamespace(Namespace) (interface{}, error)
 
@@ -125,6 +127,9 @@ type DatabaseClient interface {
 	GetNsUgroup(ns string) (interface{}, error)
 	/*add a user ugroup*/
 	AddUgroup(UserGroup) (interface{}, error)
+	GetUgroup(ugid string) (interface{}, error)
+	UpdateUgroup() (interface{}, error)
+	DeleteUgroup(ugid string) (interface{}, error)
 
 	/*----Accounts -- struct : UserInfo*/
 	/*list all user accounts*/
@@ -133,6 +138,10 @@ type DatabaseClient interface {
 	AddUserAccount(UserInfo) (interface{}, error)
 	/*get specific uesr account*/
 	GetAccountInfo(string) (interface{}, error)
+	UpdateAccount() (interface{}, error)
+	DeleteAccount(string) (interface{}, error)
+
+	GetLog(lo string) (interface{}, error)
 }
 
 //注册数据库客户端

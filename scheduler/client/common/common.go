@@ -31,6 +31,7 @@ var (
 	Delete = Op{Name: "DELETE"}
 	Put    = Op{Name: "PUT"}
 	Post   = Op{Name: "POST"}
+	Update = Op{Name: "UPDATE"}
 )
 
 func (c BaseClient) DoAction(path string, op Op) (resp *http.Response, err error) {

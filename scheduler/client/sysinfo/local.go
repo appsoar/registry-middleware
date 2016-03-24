@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ProcStat = "/proc/stat"
+	Proc = "/host/proc/"
 )
 
 var (
@@ -26,7 +26,7 @@ func init() {
 }
 
 func getAllTimeAndIdle() (alltime uint64, idletime uint64, err error) {
-	s, err := linuxproc.ReadStat("/proc/stat")
+	s, err := linuxproc.ReadStat(Proc + "stat")
 	if err != nil {
 		return
 	}
@@ -56,7 +56,7 @@ func (c *LocalSysinfo) GetCpuUsage() (int, error) {
 }
 
 func (c *LocalSysinfo) GetRamStat() (Total uint64, Available uint64, err error) {
-	mem, err := linuxproc.ReadMemInfo("/proc/meminfo")
+	mem, err := linuxproc.ReadMemInfo(Proc + "meminfo")
 	if err != nil {
 		return
 	}
@@ -84,6 +84,58 @@ func (c *LocalSysinfo) GetDiskStat() (All uint64, Free uint64, err error) {
 
 }
 
+func (c *LocalSysinfo) GetNetIfs() (interface{}, error) {
+	networkStat1, err := linuxproc.ReadNetworkStat(Proc + "net/dev")
+	if err != nil {
+		panic(err)
+	}
+	/*
+		ifs = make([]string, len(networkStat1))
+		for i := 0; i < len(networkStat1); i++ {
+			ifs[i] = networkStat1.
+		}
+	*/
+	var ifs []string
+	for i := 0; i < len(networkStat1); i++ {
+		ifs = append(ifs, networkStat1[i].Iface)
+	}
+	return ifs, nil
+}
+
+func (c *LocalSysinfo) GetNetIfStat(If string) (interface{}, error) {
+	networkStat1, err := linuxproc.ReadNetworkStat(Proc + "net/dev")
+	if err != nil {
+		panic(err)
+	}
+
+	var i int
+	for i = 0; i < len(networkStat1); i++ {
+		if networkStat1[i].Iface == If {
+			t := NetStat{Iface: networkStat1[i].Iface,
+				RxBytes: networkStat1[i].RxBytes,
+				TxBytes: networkStat1[i].TxBytes,
+			}
+			time.Sleep(1 * time.Second)
+			networkStat2, err := linuxproc.ReadNetworkStat(Proc + "net/dev")
+			if err != nil {
+				panic(err)
+			}
+
+			for j := 0; j < len(networkStat2); j++ {
+				if networkStat2[j].Iface == t.Iface {
+					t.RxBytes = networkStat2[j].RxBytes - t.RxBytes
+					t.TxBytes = networkStat2[j].TxBytes - t.TxBytes
+				}
+			}
+
+			return t, nil
+		}
+	}
+
+	panic(If + " not found")
+}
+
+/*
 func (c *LocalSysinfo) GetNetStat() ([]NetStat, error) {
 	var netStat []NetStat
 	//必须 通过make来进行初始化
@@ -100,7 +152,7 @@ func (c *LocalSysinfo) GetNetStat() ([]NetStat, error) {
 	}
 	//log.Logger.Debug(netStatMap)
 
-	/*过滤掉lo等Iface*/
+	//过滤掉lo等Iface.这里需要正则表达式,处理veth*等网卡
 	for j := 0; j < len(filter); j++ {
 		_, ok := netStatMap[filter[j]]
 		if ok {
@@ -132,4 +184,4 @@ func (c *LocalSysinfo) GetNetStat() ([]NetStat, error) {
 
 	return netStat, nil
 
-}
+}*/

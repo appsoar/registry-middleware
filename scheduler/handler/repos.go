@@ -88,7 +88,6 @@ func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
 	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	vars := mux.Vars(r)
-	name := vars["usernameOrNamespace"]
 	repoName := vars["repoName"]
 
 	if len(repoName) == 0 {
@@ -96,7 +95,7 @@ func listRepoTags(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	nsJson, err := globalClient.ListRepoTags(name, repoName)
+	nsJson, err := globalClient.ListRepoTags(repoName)
 	if err != nil {
 		err = checkDbErr(err)
 		return
@@ -115,7 +114,6 @@ func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
 	log.Logger.Info(r.RemoteAddr + ":" + user + " get repositories")
 
 	vars := mux.Vars(r)
-	name := vars["usernameOrNamespace"]
 	repoName := vars["repoName"]
 	tagName := vars["tagName"]
 
@@ -124,7 +122,7 @@ func getTagImage(w http.ResponseWriter, r *http.Request) (err error) {
 		return
 	}
 
-	nsJson, err := globalClient.GetTagImage(name, repoName, tagName)
+	nsJson, err := globalClient.GetTagImage(repoName, tagName)
 	if err != nil {
 		err = checkDbErr(err)
 		return

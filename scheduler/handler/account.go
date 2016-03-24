@@ -81,6 +81,47 @@ func getAccounts(w http.ResponseWriter, r *http.Request) (err error) {
 	return
 }
 
+func updateAccount(w http.ResponseWriter, r *http.Request) (err error) {
+	user, err := getRequestUser(w, r)
+	if err != nil {
+		err = errjson.NewUnauthorizedError("user doesn't login")
+		return
+	}
+
+	log.Logger.Info(r.RemoteAddr + " : " + user + "update account")
+	nsJson, err := globalClient.UpdateUserAccount()
+	if err != nil {
+		err = checkDbErr(err)
+		return
+	}
+	fmt.Fprintf(w, string(nsJson))
+	return
+}
+
+func deleteAccount(w http.ResponseWriter, r *http.Request) (err error) {
+	user, err := getRequestUser(w, r)
+	if err != nil {
+		err = errjson.NewUnauthorizedError("user doesn't login")
+		return
+	}
+
+	log.Logger.Info(r.RemoteAddr + " : " + user + "delete account")
+
+	vars := mux.Vars(r)
+	uid, ok := vars["user_id"]
+	if !ok {
+		panic("user_id missing")
+	}
+
+	nsJson, err := globalClient.DeleteUserAccount(uid)
+	if err != nil {
+		err = checkDbErr(err)
+		return
+	}
+	fmt.Fprintf(w, string(nsJson))
+	return
+}
+
 func addAccount(w http.ResponseWriter, r *http.Request) (err error) {
 	user, err := getRequestUser(w, r)
 	if err != nil {

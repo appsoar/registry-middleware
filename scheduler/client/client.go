@@ -2,6 +2,7 @@ package client
 
 import (
 	"errors"
+	"fmt"
 	"scheduler/client/database"
 	"scheduler/client/registry"
 	"scheduler/client/sysinfo"
@@ -51,12 +52,44 @@ func NewClient() (*Client, error) {
 
 /*====================获取系统统计信息====================*/
 type SysInfo struct {
-	CpuUsage      int               `json:"cpuUsage"`
-	TotalRam      uint64            `json:"totalRam"`
-	AvailableRam  uint64            `json:"availableRam"`
-	TotalDisk     uint64            `json:"totalDisk"`
-	AvailableDisk uint64            `json:"availableDisk"`
-	NetStat       []sysinfo.NetStat `json:"netStat"`
+	CpuUsage      int    `json:"cpuUsage"`
+	TotalRam      uint64 `json:"totalRam"`
+	AvailableRam  uint64 `json:"availableRam"`
+	TotalDisk     uint64 `json:"totalDisk"`
+	AvailableDisk uint64 `json:"availableDisk"`
+	//	NetStat       []sysinfo.NetStat `json:"netStat"`
+}
+
+func (c *Client) GetNetIfs() ([]byte, error) {
+	tmp, err := c.sysInfo.GetNetIfs()
+	if err == nil {
+		if ifs, ok := tmp.([]string); ok {
+			ifsbytes, err := json.Marshal(ifs)
+			if err != nil {
+				return []byte{}, err
+			}
+			return ifsbytes, err
+		}
+
+	}
+	return []byte{}, err
+}
+
+func (c *Client) GetNetIfStat(If string) ([]byte, error) {
+	tmp, err := c.sysInfo.GetNetIfStat(If)
+	if err == nil {
+		if ifstat, ok := tmp.(sysinfo.NetStat); ok {
+			ifbytes, err := json.Marshal(ifstat)
+			if err != nil {
+				return []byte{}, err
+			}
+			return ifbytes, nil
+		} else {
+			fmt.Println("type assertion fail")
+		}
+
+	}
+	return []byte{}, err
 }
 
 func (c *Client) GetSysInfo() (SysInfo, error) {
@@ -71,7 +104,7 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 		make(chan uint64),
 		make(chan uint64),
 	}
-	var netchan = make(chan []sysinfo.NetStat)
+	//	var netchan = make(chan []sysinfo.NetStat)
 
 	go func() {
 		cpuUsage, err := c.sysInfo.GetCpuUsage()
@@ -101,22 +134,22 @@ func (c *Client) GetSysInfo() (SysInfo, error) {
 		diskchan[0] <- totalDisk
 		diskchan[1] <- availableDisk
 	}()
-
-	go func() {
-		netStat, err := c.sysInfo.GetNetStat()
-		if err != nil {
-			log.Logger.Error("get netstat fail")
-			panic(err)
-		}
-		netchan <- netStat
-	}()
-
+	/*
+		go func() {
+			netStat, err := c.sysInfo.GetNetStat()
+			if err != nil {
+				log.Logger.Error("get netstat fail")
+				panic(err)
+			}
+			netchan <- netStat
+		}()
+	*/
 	info.CpuUsage = <-cpuchan
 	info.TotalRam = <-ramchan[0]
 	info.AvailableRam = <-ramchan[1]
 	info.TotalDisk = <-diskchan[0]
 	info.AvailableDisk = <-diskchan[1]
-	info.NetStat = <-netchan
+	//	info.NetStat = <-netchan
 	/*
 		log.Logger.Debug("cpu:%v, total:%v,avail:%v, total:%v,avail:%v\n", info.CpuUsage, info.TotalRam, info.AvailableRam, info.TotalRam, info.AvailableDisk)
 		log.Logger.Debug("%+v", info.NetStat)
@@ -176,7 +209,7 @@ func (c *Client) DeleteImageDigest(image string, tag string) error {
 
 /*===============获取用户数量,命名空间,镜像数统计===============*/
 
-func (c *Client) GetUserStats() (us database.UserStats, err error) {
+func (c *Client) GetUserStats() (resp []byte, err error) {
 	respRec, err := c.database.GetInfo()
 	if err != nil {
 		return
@@ -186,15 +219,17 @@ func (c *Client) GetUserStats() (us database.UserStats, err error) {
 		panic("type assertion fail")
 	}
 
-	var rp database.Response
-	err = json.Unmarshal(resp, &rp)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(rp.Content, &us)
-	if err != nil {
-		panic(err)
-	}
+	/*
+		var rp database.Response
+		err = json.Unmarshal(resp, &rp)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(rp.Content, &us)
+		if err != nil {
+			panic(err)
+		}
+	*/
 
 	return
 }
@@ -272,6 +307,32 @@ func (c *Client) AddUserAccount(user database.UserInfo) (resp []byte, err error)
 	return
 }
 
+func (c *Client) UpdateUserAccount() (resp []byte, err error) {
+
+	respRec, err := c.database.UpdateAccount()
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
+func (c *Client) DeleteUserAccount(user string) (resp []byte, err error) {
+
+	respRec, err := c.database.DeleteAccount(user)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
 /*=============Repositories===================*/
 
 func (c *Client) GetRepositories() (resp []byte, err error) {
@@ -309,8 +370,8 @@ func (c *Client) GetRepositoriesDecoded() (repo []database.Repository, err error
 	return
 }
 
-func (c *Client) ListRepoTags(usernameOrNamespace string, repoName string) (resp []byte, err error) {
-	respRec, err := c.database.ListRepoTags(usernameOrNamespace, repoName)
+func (c *Client) ListRepoTags(repoName string) (resp []byte, err error) {
+	respRec, err := c.database.ListRepoTags(repoName)
 	if err != nil {
 		return
 	}
@@ -349,9 +410,9 @@ func (c *Client) GetUserRepos(user string) (resp []byte, err error) {
 
 /*===================镜像===================*/
 
-func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string, tagName string) (tag database.TagInfo, err error) {
+func (c *Client) GetTagImageDecoded(repoName string, tagName string) (tag database.TagInfo, err error) {
 	var respUmr database.Response
-	respRec, err := c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+	respRec, err := c.database.GetTagImage(repoName, tagName)
 	if err != nil {
 		return
 	}
@@ -369,8 +430,8 @@ func (c *Client) GetTagImageDecoded(usernameOrNamespace string, repoName string,
 	return
 }
 
-func (c *Client) GetTagImage(usernameOrNamespace string, repoName string, tagName string) (resp []byte, err error) {
-	respRec, err := c.database.GetTagImage(usernameOrNamespace, repoName, tagName)
+func (c *Client) GetTagImage(repoName string, tagName string) (resp []byte, err error) {
+	respRec, err := c.database.GetTagImage(repoName, tagName)
 	if err != nil {
 		return
 	}
@@ -448,6 +509,30 @@ func (c *Client) AddNamespace(ns database.Namespace) (resp []byte, err error) {
 	return
 }
 
+func (c *Client) DeleteNamespace(ns string) (resp []byte, err error) {
+	respRec, err := c.database.DeleteNamespace(ns)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
+func (c *Client) UpdateNamespace() (resp []byte, err error) {
+	respRec, err := c.database.UpdateNamespace()
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
 /* ============== 用户组 ==================*/
 
 func (c *Client) GetNsUgroup(ns string) (resp []byte, err error) {
@@ -464,6 +549,54 @@ func (c *Client) GetNsUgroup(ns string) (resp []byte, err error) {
 
 func (c *Client) AddUgroup(ug database.UserGroup) (resp []byte, err error) {
 	respRec, err := c.database.AddUgroup(ug)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
+func (c *Client) GetUgroup(gid string) (resp []byte, err error) {
+	respRec, err := c.database.GetUgroup(gid)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
+func (c *Client) UpdateUgroup() (resp []byte, err error) {
+	respRec, err := c.database.UpdateUgroup()
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
+func (c *Client) DeleteUgroup(gid string) (resp []byte, err error) {
+	respRec, err := c.database.DeleteUgroup(gid)
+	if err != nil {
+		return
+	}
+	resp, ok := respRec.([]byte)
+	if !ok {
+		panic("type assertion fail")
+	}
+	return
+}
+
+func (c *Client) GetLog(lo string) (resp []byte, err error) {
+	respRec, err := c.database.GetLog(lo)
 	if err != nil {
 		return
 	}

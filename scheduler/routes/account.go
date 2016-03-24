@@ -25,4 +25,18 @@ var accountRoutes = Routes{
 		"/api/v0/account",
 		handler.AddAccount,
 	},
+
+	Route{
+		"Account",
+		"PUT",
+		"/api/v0/account",
+		handler.UpdateAccount,
+	},
+
+	Route{
+		"Account",
+		"DELETE",
+		"/api/v0/account/{user_id}",
+		handler.DeleteAccount,
+	},
 }

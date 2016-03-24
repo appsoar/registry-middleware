@@ -19,7 +19,9 @@ type SysInfoClient interface {
 
 	GetRamStat() (uint64, uint64, error)
 	GetDiskStat() (uint64, uint64, error)
-	GetNetStat() ([]NetStat, error)
+	//	GetNetStat() ([]NetStat, error)
+	GetNetIfs() (interface{}, error)
+	GetNetIfStat(string) (interface{}, error)
 }
 
 func RegisterSysinfoClient(name string, client SysInfoClient) error {
