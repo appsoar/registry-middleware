@@ -2,12 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"golang.org/x/net/websocket"
-	"net/http"
-	//	"os"
 	"fmt"
 	"github.com/gorilla/mux"
-	//	"io/ioutil"
+	"golang.org/x/net/websocket"
+	"net/http"
 	"scheduler/client"
 	"scheduler/errjson"
 	"scheduler/log"
@@ -57,35 +55,44 @@ func errJsonReturn(w http.ResponseWriter, r *http.Request, err error) {
 	//类型断言时如果多个类型放在switch case,go语言不知道使用哪个
 	//因此go会使用原来的类型(这里是error)
 	case errjson.UnauthorizedError:
-		w.WriteHeader(e.Resp.Status)
-		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
+		w.WriteHeader(e.Status)
+		if err := json.NewEncoder(w).Encode(e); err != nil {
 			panic(err)
 		}
 	case errjson.NotFoundError:
-		w.WriteHeader(e.Resp.Status)
-		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
+		w.WriteHeader(e.Status)
+		if err := json.NewEncoder(w).Encode(e); err != nil {
 			panic(err)
 		}
 	case errjson.NotValidEntityError:
-		w.WriteHeader(e.Resp.Status)
-		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
+		w.WriteHeader(e.Status)
+		if err := json.NewEncoder(w).Encode(e); err != nil {
 			panic(err)
 		}
 
 	case errjson.InternalServerError:
-		w.WriteHeader(e.Resp.Status)
-		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
+		w.WriteHeader(e.Status)
+		if err := json.NewEncoder(w).Encode(e); err != nil {
 			panic(err)
 		}
 
 	case errjson.ErrForbidden:
-		w.WriteHeader(e.Resp.Status)
-		if err := json.NewEncoder(w).Encode(e.Resp); err != nil {
+		w.WriteHeader(e.Status)
+		if err := json.NewEncoder(w).Encode(e); err != nil {
 			panic(err)
 		}
 	default:
 		panic("not json return error")
 	}
+}
+
+func withJsonReturn(fn func(http.ResponseWriter, *http.Request) error, w http.ResponseWriter, r *http.Request) {
+	if err := fn(w, r); err != nil {
+		errJsonReturn(w, r, err)
+		return
+	}
+	jsonReturn(w, r)
+	return
 }
 
 //和Fprintf(w,"")冲突,会触发multiple header write错误
@@ -179,27 +186,6 @@ type LogStruct struct {
 	Detail string `json:"detail"`
 }
 
-//需要修改
-/*
-func GetLog(ws *websocket.Conn) {
-	defer func() {
-		ws.Close()
-	}()
-	for {
-		content, err := ioutil.ReadFile("./logs.json")
-		if err != nil {
-			log.Logger.Error("read logs fail")
-			continue
-		}
-
-		if err := websocket.Message.Send(ws, string(content)); err != nil {
-			panic(err)
-		}
-		time.Sleep(1 * time.Second)
-
-	}
-}
-*/
 func getLog(w http.ResponseWriter, r *http.Request) (err error) {
 	/*
 		content, err := ioutil.ReadFile("/home/kiongf/registry-middleware/src/scheduler/handler/logs.json")
@@ -224,12 +210,7 @@ func getLog(w http.ResponseWriter, r *http.Request) (err error) {
 }
 
 func GetLog(w http.ResponseWriter, r *http.Request) {
-	if err := getLog(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getLog, w, r)
 }
 
 func getIfs(w http.ResponseWriter, r *http.Request) (err error) {
@@ -242,12 +223,7 @@ func getIfs(w http.ResponseWriter, r *http.Request) (err error) {
 }
 
 func GetIfs(w http.ResponseWriter, r *http.Request) {
-	if err := getIfs(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getIfs, w, r)
 }
 
 func getIfStat(w http.ResponseWriter, r *http.Request) (err error) {
@@ -266,12 +242,7 @@ func getIfStat(w http.ResponseWriter, r *http.Request) (err error) {
 }
 
 func GetIfStat(w http.ResponseWriter, r *http.Request) {
-	if err := getIfStat(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getIfStat, w, r)
 }
 
 /*为了解决请求返回信息冗余的问题,合并http请求控制器最后路径为errJsonReturn或jsonReturn
@@ -279,21 +250,11 @@ func GetIfStat(w http.ResponseWriter, r *http.Request) {
 因此使用此方法.下一步,尝试更改gorilla/mux代码?*/
 /*登录控制器*/
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	if err := login(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(login, w, r)
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	if err := logout(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(logout, w, r)
 }
 
 //无效url请求
@@ -303,173 +264,78 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAllNsHandler(w http.ResponseWriter, r *http.Request) {
-	if err := GetAllNs(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(GetAllNs, w, r)
 }
 
 func GetSpecNsHandler(w http.ResponseWriter, r *http.Request) {
-	if err := getSpecNs(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getSpecNs, w, r)
 }
 
 func UpdateNs(w http.ResponseWriter, r *http.Request) {
-	if err := updateNs(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(updateNs, w, r)
 }
 
 func DeleteNs(w http.ResponseWriter, r *http.Request) {
-	if err := deleteNs(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(deleteNs, w, r)
 }
 
 func GetReposHandler(w http.ResponseWriter, r *http.Request) {
-	if err := getRepos(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getRepos, w, r)
 }
 func GetNsReposHandler(w http.ResponseWriter, r *http.Request) {
-	if err := getNsRepos(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getNsRepos, w, r)
 }
 
 func GetUserReposHandler(w http.ResponseWriter, r *http.Request) {
-	if err := getUserRepos(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getUserRepos, w, r)
 }
 
 func ListRepoTagsHandler(w http.ResponseWriter, r *http.Request) {
-	if err := listRepoTags(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(listRepoTags, w, r)
 }
 
 func GetTagImageHandler(w http.ResponseWriter, r *http.Request) {
-	if err := getTagImage(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getTagImage, w, r)
 }
 
 func GetAccounts(w http.ResponseWriter, r *http.Request) {
-	if err := getAccounts(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getAccounts, w, r)
 }
 
 func GetUserAccount(w http.ResponseWriter, r *http.Request) {
-	if err := getUserAccount(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getUserAccount, w, r)
 }
 
 func AddAccount(w http.ResponseWriter, r *http.Request) {
-	if err := addAccount(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(addAccount, w, r)
 }
 
 func UpdateAccount(w http.ResponseWriter, r *http.Request) {
-	if err := updateAccount(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(updateAccount, w, r)
 }
 
 func DeleteAccount(w http.ResponseWriter, r *http.Request) {
-	if err := deleteAccount(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(deleteAccount, w, r)
 }
 
 func GetNsUgroup(w http.ResponseWriter, r *http.Request) {
-	if err := getNsUgroup(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(getNsUgroup, w, r)
 }
 
 func AddUgroup(w http.ResponseWriter, r *http.Request) {
-	if err := addUgroup(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(addUgroup, w, r)
 }
 
 func DeleteUgroup(w http.ResponseWriter, r *http.Request) {
-	if err := deleteUgroup(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(deleteUgroup, w, r)
 }
 
 func UpdateUgroup(w http.ResponseWriter, r *http.Request) {
-	if err := updateUgroup(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(updateUgroup, w, r)
 }
 
 func GetUgroup(w http.ResponseWriter, r *http.Request) {
-	if err := getUgroup(w, r); err != nil {
-		errJsonReturn(w, r, err)
-		return
-	}
-	jsonReturn(w, r)
-	return
+	withJsonReturn(updateUgroup, w, r)
 }
 
 /*记录已登录用户*/

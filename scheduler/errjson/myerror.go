@@ -21,13 +21,13 @@ func (e RespError) Error() string {
 
 //404 error
 type NotFoundError struct {
-	Resp RespError
+	RespError
 }
 
 func NewNotFoundError(msg string) NotFoundError {
 
 	e := NotFoundError{
-		Resp: RespError{
+		RespError: RespError{
 			Type:   "error",
 			Status: http.StatusNotFound,
 			Code:   "404 not found",
@@ -37,18 +37,15 @@ func NewNotFoundError(msg string) NotFoundError {
 	return e
 
 }
-func (e NotFoundError) Error() string {
-	return e.Resp.Data
-}
 
 //403
 type ErrForbidden struct {
-	Resp RespError
+	RespError
 }
 
 func NewErrForbidden(msg string) ErrForbidden {
 	e := ErrForbidden{
-		Resp: RespError{
+		RespError: RespError{
 			Type:   "error",
 			Status: http.StatusForbidden,
 			Code:   "Forbidden",
@@ -58,18 +55,14 @@ func NewErrForbidden(msg string) ErrForbidden {
 	return e
 }
 
-func (e ErrForbidden) Error() string {
-	return e.Resp.Data
-}
-
 //422错误
 type NotValidEntityError struct {
-	Resp RespError
+	RespError
 }
 
 func NewNotValidEntityError(msg string) NotValidEntityError {
 	e := NotValidEntityError{
-		Resp: RespError{
+		RespError: RespError{
 			Type:   "error",
 			Status: 422,
 			Code:   "Unprocessable Entity",
@@ -78,18 +71,15 @@ func NewNotValidEntityError(msg string) NotValidEntityError {
 	}
 	return e
 }
-func (e NotValidEntityError) Error() string {
-	return e.Resp.Data
-}
 
 //401
 type UnauthorizedError struct {
-	Resp RespError
+	RespError
 }
 
 func NewUnauthorizedError(msg string) UnauthorizedError {
 	e := UnauthorizedError{
-		Resp: RespError{
+		RespError: RespError{
 			Type:   "error",
 			Status: http.StatusUnauthorized,
 			Code:   "Unauthorized",
@@ -99,18 +89,14 @@ func NewUnauthorizedError(msg string) UnauthorizedError {
 	return e
 }
 
-func (e UnauthorizedError) Error() string {
-	return e.Resp.Data
-}
-
 //500
 type InternalServerError struct {
-	Resp RespError
+	RespError
 }
 
 func NewInternalServerError(msg string) InternalServerError {
 	e := InternalServerError{
-		Resp: RespError{
+		RespError: RespError{
 			Type:   "error",
 			Status: http.StatusInternalServerError,
 			Code:   "internel server error",
@@ -118,8 +104,4 @@ func NewInternalServerError(msg string) InternalServerError {
 		},
 	}
 	return e
-}
-
-func (e InternalServerError) Error() string {
-	return e.Resp.Data
 }
