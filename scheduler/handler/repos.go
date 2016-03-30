@@ -2,8 +2,8 @@ package handler
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
+	"scheduler/Godeps/_workspace/src/github.com/gorilla/mux"
 	"scheduler/errjson"
 	"scheduler/log"
 )

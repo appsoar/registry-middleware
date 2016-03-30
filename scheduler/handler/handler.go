@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
-	"golang.org/x/net/websocket"
+	"scheduler/Godeps/_workspace/src/github.com/gorilla/mux"
+	"scheduler/Godeps/_workspace/src/golang.org/x/net/websocket"
 )
 
 var (

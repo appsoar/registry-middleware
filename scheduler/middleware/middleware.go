@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/codegangsta/negroni"
+	"scheduler/Godeps/_workspace/src/github.com/codegangsta/negroni"
 )
 
 var negronies = []negroni.Handler{

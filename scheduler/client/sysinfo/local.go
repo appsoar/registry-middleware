@@ -2,7 +2,7 @@ package sysinfo
 
 import (
 	//	"fmt"
-	linuxproc "github.com/c9s/goprocinfo/linux"
+	linuxproc "scheduler/Godeps/_workspace/src/github.com/c9s/goprocinfo/linux"
 	//	"os"
 	//	"errors"
 	//	"scheduler/log"

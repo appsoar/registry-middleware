@@ -9,8 +9,8 @@ import (
 	"scheduler/errjson"
 	"scheduler/log"
 
-	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
+	"scheduler/Godeps/_workspace/src/github.com/gorilla/mux"
+	"scheduler/Godeps/_workspace/src/golang.org/x/crypto/bcrypt"
 )
 
 func checkDbErr(err1 error) (err error) {

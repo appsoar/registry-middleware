@@ -3,8 +3,8 @@ package log
 import (
 	//	"encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/logs"
 	"os"
+	"scheduler/Godeps/_workspace/src/github.com/astaxie/beego/logs"
 )
 
 var (

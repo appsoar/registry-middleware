@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"scheduler/handler"
 
-	"github.com/gorilla/mux"
-	"golang.org/x/net/websocket"
+	"scheduler/Godeps/_workspace/src/github.com/gorilla/mux"
+	"scheduler/Godeps/_workspace/src/golang.org/x/net/websocket"
 )
 
 type Route struct {

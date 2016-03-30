@@ -3,8 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
+	"scheduler/Godeps/_workspace/src/github.com/gorilla/mux"
 	"scheduler/client/database"
 	"scheduler/errjson"
 	"scheduler/log"
