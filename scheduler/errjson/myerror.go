@@ -19,7 +19,6 @@ func (e RespError) Error() string {
 	return e.Data
 }
 
-//404 error
 type NotFoundError struct {
 	RespError
 }
@@ -35,10 +34,8 @@ func NewNotFoundError(msg string) NotFoundError {
 		},
 	}
 	return e
-
 }
 
-//403
 type ErrForbidden struct {
 	RespError
 }

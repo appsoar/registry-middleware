@@ -3,13 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"net/http"
 	"scheduler/client/database"
 	"scheduler/errjson"
 	"scheduler/log"
+
+	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func checkDbErr(err1 error) (err error) {

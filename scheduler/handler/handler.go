@@ -3,8 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"scheduler/client"
 	"scheduler/errjson"
@@ -13,6 +11,9 @@ import (
 	_ "scheduler/session/provider"
 	"sync"
 	"time"
+
+	"github.com/gorilla/mux"
+	"golang.org/x/net/websocket"
 )
 
 var (
@@ -359,7 +360,7 @@ func init() {
 	}
 
 	//创建一个全局的session管理器,session存储方式为内存,cookie名为gosessionid
-	globalSessions, err = session.NewManager("memory", "gosessionid", 3600)
+	globalSessions, err = session.NewManager("memory", "gosessionid", 3600000)
 	if err != nil {
 		log.Logger.Debug("fail to create session manager:%s", err.Error())
 		panic(err)

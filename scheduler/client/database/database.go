@@ -39,19 +39,19 @@ func (e EDatabase) Error() string {
 }
 
 type UserInfo struct {
-	Id       string  `json:"_id"`
-	Password string  `json:"password"`
-	NickName string  `json:"nick_name"`
-	Avatar   string  `json:"avatar"`
-	JoinTime float64 `json:"join_time"`
+	Id       string `json:"_id"`
+	Password string `json:"password"`
+	NickName string `json:"nick_name"`
+	Avatar   string `json:"avatar"`
+	JoinTime int64  `json:"join_time"`
 }
 
 type UserGroup struct {
-	Id         int     `json:"_id"`
-	GroupName  string  `json:"group_name"`
-	Namespace  string  `json:"namespace"`
-	CreateTime float64 `json:"create_time"`
-	Desc       string  `json:"desc"`
+	Id         int    `json:"_id"`
+	GroupName  string `json:"group_name"`
+	Namespace  string `json:"namespace"`
+	CreateTime int64  `json:"create_time"`
+	Desc       string `json:"desc"`
 }
 
 type UserStats struct {
@@ -63,7 +63,7 @@ type Repository struct {
 	Id         string  `json:"_id"`
 	Namespace  string  `json:"namespace"`
 	User       string  `json:"user_id"`
-	PushTime   float64 `json:"push_time"`
+	PushTime   int64   `json:"push_time"`
 	Desc       string  `json:"desc"`
 	Public     bool    `json:"is_public"`
 	DeleteTime float64 `json:"delete"`
@@ -82,17 +82,17 @@ type TagInfo struct {
 }
 
 type Namespace struct {
-	Id         string  `json:"_id"`
-	OwnerId    string  `json:"_id"`
-	Desc       string  `json:"desc"`
-	Permission string  `json:"public"`
-	CreateTime float64 `json:"create_time"`
+	Id         string `json:"_id"`
+	OwnerId    string `json:"_id"`
+	Desc       string `json:"desc"`
+	Permission string `json:"public"`
+	CreateTime int64  `json:"create_time"`
 }
 
 type Response struct {
-	Content json.RawMessage
-	Message string
-	Result  int
+	Content json.RawMessage `json:"content"`
+	Message string          `json:"message"`
+	Result  int             `json:"result"`
 }
 
 type DatabaseClient interface {

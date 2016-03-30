@@ -1,10 +1,11 @@
 package routes
 
 import (
-	"github.com/gorilla/mux"
-	"golang.org/x/net/websocket"
 	"net/http"
 	"scheduler/handler"
+
+	"github.com/gorilla/mux"
+	"golang.org/x/net/websocket"
 )
 
 type Route struct {

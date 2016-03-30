@@ -267,6 +267,7 @@ func (c *Client) GetUserAccountDecoded(user string) (ui database.UserInfo, err e
 	var rp database.Response
 	err = json.Unmarshal(resp, &rp)
 	if err == nil {
+		log.Logger.Debug(string(resp))
 		err = json.Unmarshal(rp.Content, &ui)
 
 	}

@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	Proc = "/host/proc/"
+	Proc     = "/host/proc/"
+	DiskPath = "/.hidden/root"
 )
 
 var (
@@ -72,7 +73,7 @@ func (c *LocalSysinfo) GetRamStat() (Total uint64, Available uint64, err error) 
 
 //Mb为单位
 func (c *LocalSysinfo) GetDiskStat() (All uint64, Free uint64, err error) {
-	disk, err := linuxproc.ReadDisk("/")
+	disk, err := linuxproc.ReadDisk(DiskPath)
 	if err != nil {
 		return
 	}
